@@ -1,0 +1,42 @@
+# dependencias
+/node_modules
+/.pnp
+.pnp.*
+
+# next
+/.next/
+/out/
+next-env.d.ts
+*.tsbuildinfo
+
+# producción
+/build
+
+# entorno — nunca commitear claves
+.env
+.env*.local
+!.env.example
+
+# media del catálogo: se sube a Supabase Storage, no al repo.
+# Se regenera con `npm run catalog:media`.
+/media
+
+# supabase local
+/supabase/.branches
+/supabase/.temp
+
+# editor / SO
+.DS_Store
+*.pem
+.vercel
+.idea
+.vscode
+
+# entregables comerciales — no forman parte del código del producto
+/propuesta-comercial
+/product-preview
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

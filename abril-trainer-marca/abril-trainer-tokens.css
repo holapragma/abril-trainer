@@ -1,0 +1,149 @@
+/* ============================================================
+   ABRIL TRAINER — TOKENS DE MARCA
+   Sistema visual usado en la presentación. Copiar este archivo
+   al proyecto real y trabajar siempre con las variables, nunca
+   con los valores literales.
+   ============================================================ */
+
+:root{
+
+  /* ---------- COLOR ----------------------------------------
+     Base neutra cálido-fría. El lima es acento, NO color de
+     fondo ni de texto largo: aparece una vez por pantalla.
+     --------------------------------------------------------- */
+
+  --paper:   #FAFAF7;   /* fondo de la aplicación */
+  --surface: #FFFFFF;   /* cards, inputs, superficies elevadas */
+
+  --ink:     #12130F;   /* texto principal y botón primario. Negro con
+                           una gota de verde: nunca #000, que se ve duro */
+  --ink-2:   #5B5F55;   /* texto secundario, descripciones */
+  --ink-3:   #9A9E93;   /* etiquetas mono, placeholders, texto inactivo */
+
+  --line:    #E7E8E1;   /* bordes de cards, chips, separadores */
+  --line-2:  #F1F2EC;   /* fondos suaves, separadores internos, avatares */
+
+  --lime:      #C6F24E; /* ACENTO. Botón de acción, estado activo, dato clave.
+                           Siempre con texto --ink encima, nunca con blanco */
+  --lime-deep: #8FB81E; /* lima sobre fondo claro: iconos, texto chico, puntos */
+  --lime-soft: #F2FBDC; /* fondo de tags y halos */
+
+  --warn:   #C98A2B;    /* pago pendiente. Apagado a propósito */
+  --danger: #C4563E;    /* pago vencido. Nunca rojo puro: es un aviso, no una alarma */
+
+
+  /* ---------- RADIOS ---------------------------------------
+     Tres valores, nada más. Más variedad rompe la coherencia.
+     --------------------------------------------------------- */
+
+  --r-s: 10px;  /* filas, celdas, elementos de lista */
+  --r-m: 16px;  /* cards */
+  --r-l: 22px;  /* contenedores grandes, modales, ventana de app */
+  /* botones y chips: siempre 999px (píldora) */
+
+
+  /* ---------- SOMBRAS --------------------------------------
+     Muy discretas. Levantan el elemento, no lo dramatizan.
+     Todas en el tono de la tinta, jamás negro puro.
+     --------------------------------------------------------- */
+
+  --sh-1: 0 1px 2px rgba(18,19,15,.04), 0 1px 1px rgba(18,19,15,.03);          /* reposo */
+  --sh-2: 0 8px 24px -12px rgba(18,19,15,.14), 0 2px 6px -2px rgba(18,19,15,.05); /* hover, botón primario */
+  --sh-3: 0 24px 60px -24px rgba(18,19,15,.24);                                /* modal, teléfono */
+
+
+  /* ---------- TIPOGRAFÍA -----------------------------------
+     Sin webfonts a propósito: carga instantánea y funciona sin
+     conexión. El carácter viene del CONTRASTE sans/mono, no de
+     una fuente comprada.
+
+     - sans → todo el contenido
+     - mono → índices, métricas, etiquetas, horarios, series×reps
+       Siempre en MAYÚSCULA y con letter-spacing abierto.
+
+     Si algún día se compra una fuente: Inter Display o
+     Söhne para la sans, y mantener la mono del sistema.
+     --------------------------------------------------------- */
+
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+
+
+  /* ---------- MOVIMIENTO -----------------------------------
+     Una sola curva en todo el producto. Salida rápida, llegada
+     suave. Duraciones: 180ms microinteracción, 380ms cambio de
+     sección, 1.05s la animación narrativa de convergencia.
+     --------------------------------------------------------- */
+
+  --ease: cubic-bezier(.22,.61,.36,1);
+
+
+  /* ---------- LAYOUT --------------------------------------- */
+
+  --top: 56px;   /* barra superior */
+  --bot: 76px;   /* zona de navegación inferior */
+}
+
+
+/* ============================================================
+   ESCALA TIPOGRÁFICA
+   Fluida con clamp(): un solo valor cubre mobile y desktop.
+   El tracking negativo en los títulos es lo que da el aire
+   premium — sin eso, la tipografía del sistema se ve genérica.
+   ============================================================ */
+
+.display{ font-size:clamp(38px,7.4vw,76px); font-weight:640; letter-spacing:-.045em; line-height:1.06 }
+.title  { font-size:clamp(25px,3.6vw,42px); font-weight:600; letter-spacing:-.035em; line-height:1.1 }
+.sub    { font-size:clamp(16px,1.9vw,21px); font-weight:450; letter-spacing:-.015em; line-height:1.45; color:var(--ink-2) }
+.lead   { font-size:15px;   line-height:1.6;  color:var(--ink-2); max-width:56ch }
+.small  { font-size:13px;   line-height:1.55; color:var(--ink-2) }
+
+/* etiqueta mono: la firma del sistema */
+.mono{
+  font-family:var(--mono); font-size:11px;
+  letter-spacing:.06em; color:var(--ink-3);
+}
+
+/* antetítulo de sección, con punto lima */
+.eyebrow{
+  font-family:var(--mono); font-size:10.5px;
+  letter-spacing:.14em; text-transform:uppercase; color:var(--ink-3);
+  display:flex; align-items:center; gap:8px;
+}
+.eyebrow::before{
+  content:""; width:5px; height:5px; border-radius:50%;
+  background:var(--lime-deep); flex:none;
+}
+
+
+/* ============================================================
+   REGLAS DE USO
+   ============================================================
+
+   COLOR
+   · Un solo elemento lima por pantalla. Si hay dos, uno sobra.
+   · Texto sobre lima: siempre --ink. El blanco sobre lima no
+     alcanza el contraste mínimo.
+   · Nada de degradados. Las superficies oscuras son planas
+     (--ink, o #1E201A para diferenciar dos bloques contiguos).
+
+   ESPACIADO
+   · Múltiplos de 4 hasta 24px; de ahí en más, clamp() fluido.
+   · Padding de card: clamp(16px, 2.4vw, 22px).
+   · Ancho máximo de contenido: 1080px.
+
+   BORDES
+   · 1px sólido --line. Nunca 2px, nunca gris oscuro.
+   · El borde punteado se reserva para "agregar algo" (+ Agregar
+     ejercicio), nunca para contenido real.
+
+   ESTADOS
+   · Reposo: borde --line, sombra --sh-1
+   · Hover:  borde --ink-3, sombra --sh-2, translateY(-2px)
+   · Activo: fondo --ink, texto blanco (chips, opciones, tabs)
+   · Foco:   outline 2px --ink, offset 3px — nunca quitarlo
+
+   MOVIMIENTO
+   · Todo con --ease. Nada rebota, nada gira.
+   · Respetar prefers-reduced-motion: reduce.
+*/

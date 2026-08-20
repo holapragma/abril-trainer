@@ -1,0 +1,235 @@
+@import 'tailwindcss';
+
+/*
+ * Abril Trainer — sistema de diseño.
+ *
+ * Tokens de abril-trainer-marca/ (v1.0): neutros cálido-fríos, un solo acento
+ * lima, tipografía de sistema (sin webfonts). Claro por defecto, oscuro como
+ * opción — el kit es light-only, el modo oscuro de acá es una extrapolación
+ * sobre --ink como base, siguiendo la propia nota del kit: "las superficies
+ * oscuras son planas (--ink, o #1E201A para diferenciar dos bloques
+ * contiguos)".
+ */
+
+@theme {
+  /* Neutros */
+  --color-bg: #fafaf7;
+  --color-surface: #ffffff;
+  --color-surface-2: #f1f2ec;
+  --color-surface-3: #ecede6;
+  --color-border: #e7e8e1;
+  --color-border-strong: #9a9e93;
+
+  --color-text: #12130f;
+  --color-text-2: #5b5f55;
+  --color-text-3: #9a9e93;
+
+  /* Acento: lima. Un solo elemento lima por pantalla; texto encima siempre --color-text, nunca blanco. */
+  --color-accent: #c6f24e;
+  --color-accent-hover: #8fb81e;
+  --color-accent-soft: #f2fbdc;
+  --color-on-accent: #12130f;
+
+  /* Semánticos */
+  --color-ok: #8fb81e;
+  --color-ok-soft: #f2fbdc;
+  --color-warn: #c98a2b;
+  --color-warn-soft: #c98a2b20;
+  --color-danger: #c4563e;
+  --color-danger-soft: #c4563e1f;
+
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, 'Helvetica Neue', Arial, sans-serif;
+  --font-display:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+
+  --radius-card: 16px;
+  --radius-s: 10px;
+  --radius-modal: 22px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --color-bg: #12130f;
+    --color-surface: #1e201a;
+    --color-surface-2: #262920;
+    --color-surface-3: #2f3327;
+    --color-border: #33362c;
+    --color-border-strong: #4a4e42;
+
+    --color-text: #fafaf7;
+    --color-text-2: #b7bbac;
+    --color-text-3: #82867a;
+
+    --color-accent: #c6f24e;
+    --color-accent-hover: #d8f97c;
+    --color-accent-soft: #c6f24e26;
+    --color-on-accent: #12130f;
+
+    --color-ok: #a8d93a;
+    --color-ok-soft: #8fb81e26;
+    --color-warn: #e0ac55;
+    --color-warn-soft: #e0ac5526;
+    --color-danger: #e08267;
+    --color-danger-soft: #e082671f;
+  }
+}
+
+:root[data-theme='dark'] {
+  --color-bg: #12130f;
+  --color-surface: #1e201a;
+  --color-surface-2: #262920;
+  --color-surface-3: #2f3327;
+  --color-border: #33362c;
+  --color-border-strong: #4a4e42;
+
+  --color-text: #fafaf7;
+  --color-text-2: #b7bbac;
+  --color-text-3: #82867a;
+
+  --color-accent: #c6f24e;
+  --color-accent-hover: #d8f97c;
+  --color-accent-soft: #c6f24e26;
+  --color-on-accent: #12130f;
+
+  --color-ok: #a8d93a;
+  --color-ok-soft: #8fb81e26;
+  --color-warn: #e0ac55;
+  --color-warn-soft: #e0ac5526;
+  --color-danger: #e08267;
+  --color-danger-soft: #e082671f;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  html {
+    -webkit-tap-highlight-color: transparent;
+    /* Evita el zoom automático de iOS al enfocar un input */
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-sans);
+    /* Área segura del notch + altura de la nav inferior */
+    overscroll-behavior-y: none;
+  }
+
+  /* En iOS, cualquier input con font-size < 16px provoca zoom al enfocarlo.
+     Es la causa número uno de que una web se sienta "no nativa" en el móvil. */
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    letter-spacing: -0.03em;
+  }
+
+  /* Números tabulares: las columnas de importes y series no bailan. */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer utilities {
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  /*
+   * Escala tipográfica de abril-trainer-marca/. El tracking negativo en los
+   * títulos es lo que da el aire premium a una tipografía de sistema.
+   */
+  .display {
+    font-size: clamp(38px, 7.4vw, 76px);
+    font-weight: 640;
+    letter-spacing: -0.045em;
+    line-height: 1.06;
+  }
+
+  .title {
+    font-size: clamp(25px, 3.6vw, 42px);
+    font-weight: 600;
+    letter-spacing: -0.035em;
+    line-height: 1.1;
+  }
+
+  .sub {
+    font-size: clamp(16px, 1.9vw, 21px);
+    font-weight: 450;
+    letter-spacing: -0.015em;
+    line-height: 1.45;
+    color: var(--color-text-2);
+  }
+
+  .lead {
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--color-text-2);
+    max-width: 56ch;
+  }
+
+  .small {
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--color-text-2);
+  }
+
+  /* Etiqueta mono: la firma del sistema. Mayúscula, tracking abierto. */
+  .mono {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    color: var(--color-text-3);
+  }
+
+  /* Antetítulo de sección, con el punto lima. */
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-text-3);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .eyebrow::before {
+    content: '';
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--color-accent-hover);
+    flex: none;
+  }
+}
+
+/* Respetar a quien pide menos movimiento */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

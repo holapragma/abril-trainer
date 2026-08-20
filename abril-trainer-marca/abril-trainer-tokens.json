@@ -1,0 +1,45 @@
+{
+  "name": "Abril Trainer",
+  "version": "1.0",
+  "nota": "Tokens del sistema visual. Listo para Tailwind, Figma Tokens o styled-components.",
+  "color": {
+    "paper":     { "value": "#FAFAF7", "uso": "fondo de la aplicación" },
+    "surface":   { "value": "#FFFFFF", "uso": "cards e inputs" },
+    "ink":       { "value": "#12130F", "uso": "texto principal, botón primario" },
+    "ink2":      { "value": "#5B5F55", "uso": "texto secundario" },
+    "ink3":      { "value": "#9A9E93", "uso": "etiquetas, placeholders" },
+    "line":      { "value": "#E7E8E1", "uso": "bordes" },
+    "line2":     { "value": "#F1F2EC", "uso": "fondos suaves, separadores" },
+    "lime":      { "value": "#C6F24E", "uso": "acento: una vez por pantalla" },
+    "limeDeep":  { "value": "#8FB81E", "uso": "lima sobre fondo claro" },
+    "limeSoft":  { "value": "#F2FBDC", "uso": "fondo de tags" },
+    "warn":      { "value": "#C98A2B", "uso": "pago pendiente" },
+    "danger":    { "value": "#C4563E", "uso": "pago vencido" }
+  },
+  "radius": { "s": "10px", "m": "16px", "l": "22px", "pill": "999px" },
+  "shadow": {
+    "1": "0 1px 2px rgba(18,19,15,.04), 0 1px 1px rgba(18,19,15,.03)",
+    "2": "0 8px 24px -12px rgba(18,19,15,.14), 0 2px 6px -2px rgba(18,19,15,.05)",
+    "3": "0 24px 60px -24px rgba(18,19,15,.24)"
+  },
+  "font": {
+    "sans": "-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, 'Helvetica Neue', Arial, sans-serif",
+    "mono": "ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace"
+  },
+  "type": {
+    "display": { "size": "clamp(38px,7.4vw,76px)", "weight": 640, "tracking": "-0.045em", "leading": 1.06 },
+    "title":   { "size": "clamp(25px,3.6vw,42px)", "weight": 600, "tracking": "-0.035em", "leading": 1.1 },
+    "sub":     { "size": "clamp(16px,1.9vw,21px)", "weight": 450, "tracking": "-0.015em", "leading": 1.45 },
+    "lead":    { "size": "15px", "weight": 400, "leading": 1.6 },
+    "small":   { "size": "13px", "weight": 400, "leading": 1.55 },
+    "mono":    { "size": "11px", "tracking": "0.06em" },
+    "eyebrow": { "size": "10.5px", "tracking": "0.14em", "transform": "uppercase" }
+  },
+  "motion": {
+    "ease": "cubic-bezier(.22,.61,.36,1)",
+    "micro": "180ms",
+    "seccion": "380ms",
+    "narrativa": "1050ms"
+  },
+  "layout": { "maxWidth": "1080px", "topBar": "56px", "bottomNav": "76px", "cardPadding": "clamp(16px,2.4vw,22px)" }
+}
