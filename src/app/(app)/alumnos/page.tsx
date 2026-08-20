@@ -35,8 +35,8 @@ export default async function AlumnosPage({ searchParams }: { searchParams: Sear
         <Suspense key={JSON.stringify(sp)} fallback={<SkeletonList />}>
           <StudentList
             q={sp.q}
-            status={sp.estado as Enums<'student_status'> | undefined}
-            modality={sp.modalidad as Enums<'modality'> | undefined}
+            status={sp.estado as Enums<'abril_trainer_student_status'> | undefined}
+            modality={sp.modalidad as Enums<'abril_trainer_modality'> | undefined}
           />
         </Suspense>
       </PageBody>
@@ -50,8 +50,8 @@ async function StudentList({
   modality,
 }: {
   q?: string
-  status?: Enums<'student_status'>
-  modality?: Enums<'modality'>
+  status?: Enums<'abril_trainer_student_status'>
+  modality?: Enums<'abril_trainer_modality'>
 }) {
   const students = await getStudents({ q, status, modality })
   const avatars = await signedAvatarUrls(students.map((s) => s.photo_url))

@@ -16,7 +16,7 @@ export async function createStudent(input: unknown): Promise<ActionResult<{ id: 
 
   const { joined_at, ...rest } = parsed.data
   const { data, error } = await supabase
-    .from('students')
+    .from('abril_trainer_students')
     .insert({
       ...rest,
       trainer_id: userId,
@@ -43,7 +43,7 @@ export async function updateStudent(id: string, input: unknown): Promise<ActionR
   const { joined_at, ...rest } = parsed.data
 
   const { error } = await supabase
-    .from('students')
+    .from('abril_trainer_students')
     .update({ ...rest, ...(joined_at ? { joined_at } : {}) })
     .eq('id', id)
 
@@ -59,7 +59,7 @@ export async function updateStudent(id: string, input: unknown): Promise<ActionR
 
 export async function deleteStudent(id: string): Promise<ActionResult> {
   const supabase = await createClient()
-  const { error } = await supabase.from('students').delete().eq('id', id)
+  const { error } = await supabase.from('abril_trainer_students').delete().eq('id', id)
 
   if (error) {
     console.error('deleteStudent:', error.message)
@@ -100,7 +100,7 @@ export async function uploadStudentPhoto(
     return fail('No se pudo subir la foto')
   }
 
-  const { error } = await supabase.from('students').update({ photo_url: path }).eq('id', studentId)
+  const { error } = await supabase.from('abril_trainer_students').update({ photo_url: path }).eq('id', studentId)
   if (error) {
     console.error('uploadStudentPhoto/update:', error.message)
     return fail('La foto se subió pero no se pudo asociar al alumno')

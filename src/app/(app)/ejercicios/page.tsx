@@ -87,7 +87,7 @@ async function Results({
   ])
 
   // Filtrado de favoritos acá (no dentro de getExercises) para no duplicar la
-  // consulta a exercise_favorites: ya la tenemos del Promise.all de arriba.
+  // consulta a abril_trainer_exercise_favorites: ya la tenemos del Promise.all de arriba.
   const list = favsOnly ? exercises.filter((e) => favorites.has(e.id)) : exercises
 
   return <ExerciseGrid exercises={list} favorites={[...favorites]} />

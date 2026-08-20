@@ -4,13 +4,13 @@
 -- avatars: privado. Fotos de alumnos y de la entrenadora.
 --   Ruta: {trainer_id}/{student_id}.jpg
 insert into storage.buckets (id, name, public)
-values ('avatars', 'avatars', false)
+values ('abril_trainer_avatars', 'abril_trainer_avatars', false)
 on conflict (id) do nothing;
 
 -- exercise-media: público. Catálogo y media de ejercicios propios.
 --   Ruta: catalog/{exercise_id}.mp4  ·  {trainer_id}/{exercise_id}.mp4
 insert into storage.buckets (id, name, public)
-values ('exercise-media', 'exercise-media', true)
+values ('abril_trainer_exercise-media', 'abril_trainer_exercise-media', true)
 on conflict (id) do nothing;
 
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -20,28 +20,28 @@ on conflict (id) do nothing;
 create policy "avatars: lectura propia" on storage.objects
   for select to authenticated
   using (
-    bucket_id = 'avatars'
+    bucket_id = 'abril_trainer_avatars'
     and (storage.foldername(name))[1] = auth.uid()::text
   );
 
 create policy "avatars: alta propia" on storage.objects
   for insert to authenticated
   with check (
-    bucket_id = 'avatars'
+    bucket_id = 'abril_trainer_avatars'
     and (storage.foldername(name))[1] = auth.uid()::text
   );
 
 create policy "avatars: reemplazo propio" on storage.objects
   for update to authenticated
   using (
-    bucket_id = 'avatars'
+    bucket_id = 'abril_trainer_avatars'
     and (storage.foldername(name))[1] = auth.uid()::text
   );
 
 create policy "avatars: borrado propio" on storage.objects
   for delete to authenticated
   using (
-    bucket_id = 'avatars'
+    bucket_id = 'abril_trainer_avatars'
     and (storage.foldername(name))[1] = auth.uid()::text
   );
 
@@ -54,21 +54,21 @@ create policy "avatars: borrado propio" on storage.objects
 create policy "media: alta propia" on storage.objects
   for insert to authenticated
   with check (
-    bucket_id = 'exercise-media'
+    bucket_id = 'abril_trainer_exercise-media'
     and (storage.foldername(name))[1] = auth.uid()::text
   );
 
 create policy "media: reemplazo propio" on storage.objects
   for update to authenticated
   using (
-    bucket_id = 'exercise-media'
+    bucket_id = 'abril_trainer_exercise-media'
     and (storage.foldername(name))[1] = auth.uid()::text
   );
 
 create policy "media: borrado propio" on storage.objects
   for delete to authenticated
   using (
-    bucket_id = 'exercise-media'
+    bucket_id = 'abril_trainer_exercise-media'
     and (storage.foldername(name))[1] = auth.uid()::text
   );
 

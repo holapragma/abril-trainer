@@ -6,7 +6,7 @@
  * pasar lista después de la clase de las 19:00 archivaría la asistencia con la
  * fecha de mañana, y el listado de clases mostraría el día equivocado.
  *
- * En SQL el equivalente es app_today() (migración 0012). Las dos caras tienen
+ * En SQL el equivalente es abril_trainer_app_today() (migración 0012). Las dos caras tienen
  * que coincidir o los estados calculados en el cliente y en la base divergen.
  */
 

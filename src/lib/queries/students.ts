@@ -14,13 +14,13 @@ import type {
 
 export async function getStudents(filters?: {
   q?: string
-  status?: Enums<'student_status'>
-  modality?: Enums<'modality'>
+  status?: Enums<'abril_trainer_student_status'>
+  modality?: Enums<'abril_trainer_modality'>
 }): Promise<StudentListItem[]> {
   const supabase = await createClient()
 
   let query = supabase
-    .from('students')
+    .from('abril_trainer_students')
     .select('id, first_name, last_name, photo_url, modality, status, joined_at')
     .order('first_name')
 
@@ -40,7 +40,7 @@ export async function getStudents(filters?: {
 
 export async function getStudent(id: string): Promise<Student | null> {
   const supabase = await createClient()
-  const { data, error } = await supabase.from('students').select('*').eq('id', id).maybeSingle()
+  const { data, error } = await supabase.from('abril_trainer_students').select('*').eq('id', id).maybeSingle()
   if (error) throw error
   return data
 }
@@ -48,8 +48,8 @@ export async function getStudent(id: string): Promise<Student | null> {
 export async function getActiveMembership(studentId: string): Promise<MembershipWithPlan | null> {
   const supabase = await createClient()
   const { data, error } = await supabase
-    .from('memberships')
-    .select('*, plan:plans(id, name, modality, sessions_per_week)')
+    .from('abril_trainer_memberships')
+    .select('*, plan:abril_trainer_plans(id, name, modality, sessions_per_week)')
     .eq('student_id', studentId)
     .eq('status', 'activa')
     .maybeSingle()
@@ -65,20 +65,20 @@ export async function getStudentOverview(studentId: string) {
   const [membership, blocks, payments, attendance] = await Promise.all([
     getActiveMembership(studentId),
     supabase
-      .from('training_blocks')
+      .from('abril_trainer_training_blocks')
       .select('id, name, starts_on, total_weeks, status')
       .eq('student_id', studentId)
       .eq('status', 'activo')
       .order('starts_on', { ascending: false })
       .limit(1),
     supabase
-      .from('payments')
+      .from('abril_trainer_payments')
       .select('id, amount, due_date, paid_at')
       .eq('student_id', studentId)
       .order('due_date', { ascending: false })
       .limit(5),
     supabase
-      .from('attendance')
+      .from('abril_trainer_attendance')
       .select('status')
       .eq('student_id', studentId)
       .gte('date', new Date(Date.now() - 30 * 86_400_000).toISOString().slice(0, 10)),

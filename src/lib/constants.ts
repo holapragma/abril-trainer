@@ -56,24 +56,24 @@ export const DIFFICULTIES = ['Principiante', 'Intermedio', 'Avanzado'] as const
 
 // ── Etiquetas de los enums de la base ────────────────────────────────────────
 
-export const MODALITY: Record<Enums<'modality'>, string> = {
+export const MODALITY: Record<Enums<'abril_trainer_modality'>, string> = {
   presencial: 'Presencial',
   virtual: 'Virtual',
 }
 
-export const STUDENT_STATUS: Record<Enums<'student_status'>, string> = {
+export const STUDENT_STATUS: Record<Enums<'abril_trainer_student_status'>, string> = {
   activo: 'Activo',
   pausa: 'En pausa',
   baja: 'Baja',
 }
 
-export const ATTENDANCE_STATUS: Record<Enums<'attendance_status'>, string> = {
+export const ATTENDANCE_STATUS: Record<Enums<'abril_trainer_attendance_status'>, string> = {
   presente: 'Presente',
   ausente: 'Ausente',
   justificado: 'Justificado',
 }
 
-export const BLOCK_STATUS: Record<Enums<'block_status'>, string> = {
+export const BLOCK_STATUS: Record<Enums<'abril_trainer_block_status'>, string> = {
   borrador: 'Borrador',
   activo: 'Activo',
   terminado: 'Terminado',
@@ -107,6 +107,6 @@ export function weekdayLabel(n: number): string {
 export const SESSION_LABELS = ['A', 'B', 'C', 'D', 'E'] as const
 
 export const STORAGE = {
-  avatars: 'avatars',
-  media: 'exercise-media',
+  avatars: 'abril_trainer_avatars',
+  media: 'abril_trainer_exercise-media',
 } as const

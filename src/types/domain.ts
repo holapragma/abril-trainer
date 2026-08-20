@@ -21,15 +21,15 @@ export const fail = (error: string, fieldErrors?: Record<string, string>): Actio
 
 // ── Tipos compuestos ─────────────────────────────────────────────────────────
 
-export type Student = Tables<'students'>
-export type Plan = Tables<'plans'>
-export type Exercise = Tables<'exercises'>
-export type TrainingBlock = Tables<'training_blocks'>
-export type TrainingSession = Tables<'training_sessions'>
-export type SessionExercise = Tables<'session_exercises'>
-export type Klass = Tables<'classes'>
-export type Attendance = Tables<'attendance'>
-export type Payment = Tables<'payments'>
+export type Student = Tables<'abril_trainer_students'>
+export type Plan = Tables<'abril_trainer_plans'>
+export type Exercise = Tables<'abril_trainer_exercises'>
+export type TrainingBlock = Tables<'abril_trainer_training_blocks'>
+export type TrainingSession = Tables<'abril_trainer_training_sessions'>
+export type SessionExercise = Tables<'abril_trainer_session_exercises'>
+export type Klass = Tables<'abril_trainer_classes'>
+export type Attendance = Tables<'abril_trainer_attendance'>
+export type Payment = Tables<'abril_trainer_payments'>
 
 export type PaymentWithStatus = Payment & { status: 'pagado' | 'pendiente' | 'vencido' }
 
@@ -38,7 +38,7 @@ export type StudentListItem = Pick<
   'id' | 'first_name' | 'last_name' | 'photo_url' | 'modality' | 'status' | 'joined_at'
 >
 
-export type MembershipWithPlan = Tables<'memberships'> & {
+export type MembershipWithPlan = Tables<'abril_trainer_memberships'> & {
   plan: Pick<Plan, 'id' | 'name' | 'modality' | 'sessions_per_week'> | null
 }
 
@@ -60,7 +60,7 @@ export type AttendanceRow = {
   status: Attendance['status'] | null
 }
 
-/** Forma de lo que devuelve la RPC dashboard_summary(). */
+/** Forma de lo que devuelve la RPC abril_trainer_dashboard_summary(). */
 export type DashboardSummary = {
   alumnos: { total: number; activos: number; nuevos: number }
   pagos: { cobrado_mes: number; pendientes: number; vencidos: number }

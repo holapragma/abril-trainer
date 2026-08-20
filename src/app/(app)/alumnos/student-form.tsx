@@ -26,8 +26,8 @@ export function StudentForm({ student }: { student?: Student }) {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [pending, startTransition] = useTransition()
 
-  const [modality, setModality] = useState<Enums<'modality'>>(student?.modality ?? 'presencial')
-  const [status, setStatus] = useState<Enums<'student_status'>>(student?.status ?? 'activo')
+  const [modality, setModality] = useState<Enums<'abril_trainer_modality'>>(student?.modality ?? 'presencial')
+  const [status, setStatus] = useState<Enums<'abril_trainer_student_status'>>(student?.status ?? 'activo')
 
   function submit(form: HTMLFormElement) {
     const fd = new FormData(form)

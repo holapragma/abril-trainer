@@ -2,7 +2,7 @@
 -- Las dos únicas funciones RPC. Todo lo demás son consultas normales.
 
 -- ─────────────────────────────────────────────────────────────────────────────
--- duplicate_week — la operación estrella de la planificación
+-- abril_trainer_duplicate_week — la operación estrella de la planificación
 -- ─────────────────────────────────────────────────────────────────────────────
 --
 -- Copia todas las sesiones de una semana y sus ejercicios a otra semana,
@@ -13,7 +13,7 @@
 -- sería un agujero por el que cualquiera escribiría en la planificación de
 -- cualquiera.
 
-create or replace function duplicate_week(
+create or replace function abril_trainer_duplicate_week(
   p_block_id  uuid,
   p_from_week int,
   p_to_week   int default null
@@ -31,7 +31,7 @@ declare
 begin
   v_target := coalesce(
     p_to_week,
-    (select max(week_number) + 1 from training_sessions where block_id = p_block_id),
+    (select max(week_number) + 1 from abril_trainer_training_sessions where block_id = p_block_id),
     1
   );
 
@@ -41,7 +41,7 @@ begin
   end if;
 
   if exists (
-    select 1 from training_sessions
+    select 1 from abril_trainer_training_sessions
     where block_id = p_block_id and week_number = v_target
   ) then
     raise exception 'La semana % ya tiene sesiones', v_target
@@ -49,28 +49,28 @@ begin
   end if;
 
   for r in
-    select * from training_sessions
+    select * from abril_trainer_training_sessions
     where block_id = p_block_id and week_number = p_from_week
     order by order_index
   loop
-    insert into training_sessions (block_id, week_number, day_label, name, order_index, notes)
+    insert into abril_trainer_training_sessions (block_id, week_number, day_label, name, order_index, notes)
     values (r.block_id, v_target, r.day_label, r.name, r.order_index, r.notes)
     returning id into v_new_id;
 
-    insert into session_exercises (
+    insert into abril_trainer_session_exercises (
       session_id, exercise_id, order_index,
       sets, reps, load, time_seconds, rest_seconds, tempo, notes
     )
     select
       v_new_id, exercise_id, order_index,
       sets, reps, load, time_seconds, rest_seconds, tempo, notes
-    from session_exercises
+    from abril_trainer_session_exercises
     where session_id = r.id;
 
     v_count := v_count + 1;
   end loop;
 
-  update training_blocks
+  update abril_trainer_training_blocks
      set total_weeks = greatest(total_weeks, v_target)
    where id = p_block_id;
 
@@ -78,11 +78,11 @@ begin
 end;
 $$;
 
-comment on function duplicate_week is
+comment on function abril_trainer_duplicate_week is
   'Duplica una semana completa de un bloque. Devuelve cuántas sesiones copió. Si p_to_week es NULL, la agrega al final.';
 
 -- ─────────────────────────────────────────────────────────────────────────────
--- dashboard_summary — ocho agregados en un solo viaje
+-- abril_trainer_dashboard_summary — ocho agregados en un solo viaje
 -- ─────────────────────────────────────────────────────────────────────────────
 --
 -- Los agregados van en SQL, no en el cliente. Traerse todos los alumnos y todos
@@ -94,7 +94,7 @@ comment on function duplicate_week is
 -- llama. Repetir el filtro sería duplicar la fuente de verdad, y además obligaría
 -- al rol authenticated a tener acceso al esquema auth.
 
-create or replace function dashboard_summary()
+create or replace function abril_trainer_dashboard_summary()
 returns jsonb
 language sql
 security invoker
@@ -109,7 +109,7 @@ as $$
         'activos', count(*) filter (where status = 'activo'),
         'nuevos',  count(*) filter (where joined_at >= current_date - 30)
       )
-      from students
+      from abril_trainer_students
     ),
 
     'pagos', (
@@ -119,7 +119,7 @@ as $$
         'pendientes',  count(*) filter (where paid_at is null and due_date >= current_date),
         'vencidos',    count(*) filter (where paid_at is null and due_date <  current_date)
       )
-      from payments
+      from abril_trainer_payments
     ),
 
     'clases_hoy', (
@@ -129,13 +129,13 @@ as $$
           'nombre',    c.name,
           'hora',      c.start_time,
           'cupo',      c.capacity,
-          'inscritos', (select count(*) from class_enrollments e where e.class_id = c.id),
+          'inscritos', (select count(*) from abril_trainer_class_enrollments e where e.class_id = c.id),
           'asistencia_tomada', exists (
-            select 1 from attendance a where a.class_id = c.id and a.date = current_date
+            select 1 from abril_trainer_attendance a where a.class_id = c.id and a.date = current_date
           )
         ) order by c.start_time
       ), '[]'::jsonb)
-      from classes c
+      from abril_trainer_classes c
       where c.active
         and c.weekday = extract(isodow from current_date)
     ),
@@ -143,22 +143,22 @@ as $$
     'planificacion', (
       select jsonb_build_object(
         'sin_rutina', count(*) filter (where not exists (
-          select 1 from training_blocks b
+          select 1 from abril_trainer_training_blocks b
           where b.student_id = s.id and b.status = 'activo'
         )),
         'por_vencer', count(*) filter (where exists (
-          select 1 from training_blocks b
+          select 1 from abril_trainer_training_blocks b
           where b.student_id = s.id
             and b.status = 'activo'
             and b.starts_on + (b.total_weeks * 7) <= current_date + 7
         ))
       )
-      from students s
+      from abril_trainer_students s
       where s.status = 'activo'
     )
 
   );
 $$;
 
-comment on function dashboard_summary is
+comment on function abril_trainer_dashboard_summary is
   'Todos los números del dashboard en una sola llamada. security invoker: cada entrenadora ve solo lo suyo vía RLS.';

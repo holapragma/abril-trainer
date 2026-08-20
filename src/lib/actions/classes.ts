@@ -15,7 +15,7 @@ export async function createClass(input: unknown): Promise<ActionResult<{ id: st
   const supabase = await createClient()
 
   const { data, error } = await supabase
-    .from('classes')
+    .from('abril_trainer_classes')
     .insert({ ...parsed.data, trainer_id: userId })
     .select('id')
     .single()
@@ -35,7 +35,7 @@ export async function updateClass(id: string, input: unknown): Promise<ActionRes
   if (!parsed.success) return fail('Revisá los datos', fieldErrorsOf(parsed.error))
 
   const supabase = await createClient()
-  const { error } = await supabase.from('classes').update(parsed.data).eq('id', id)
+  const { error } = await supabase.from('abril_trainer_classes').update(parsed.data).eq('id', id)
 
   if (error) {
     console.error('updateClass:', error.message)
@@ -50,7 +50,7 @@ export async function updateClass(id: string, input: unknown): Promise<ActionRes
 
 export async function deleteClass(id: string): Promise<ActionResult> {
   const supabase = await createClient()
-  const { error } = await supabase.from('classes').delete().eq('id', id)
+  const { error } = await supabase.from('abril_trainer_classes').delete().eq('id', id)
 
   if (error) {
     console.error('deleteClass:', error.message)
@@ -65,7 +65,7 @@ export async function deleteClass(id: string): Promise<ActionResult> {
 export async function enrollStudent(classId: string, studentId: string): Promise<ActionResult> {
   const supabase = await createClient()
   const { error } = await supabase
-    .from('class_enrollments')
+    .from('abril_trainer_class_enrollments')
     .insert({ class_id: classId, student_id: studentId })
 
   if (error) {
@@ -84,7 +84,7 @@ export async function enrollStudent(classId: string, studentId: string): Promise
 export async function unenrollStudent(classId: string, studentId: string): Promise<ActionResult> {
   const supabase = await createClient()
   const { error } = await supabase
-    .from('class_enrollments')
+    .from('abril_trainer_class_enrollments')
     .delete()
     .eq('class_id', classId)
     .eq('student_id', studentId)
@@ -109,13 +109,13 @@ export async function markAttendance(
   classId: string,
   studentId: string,
   date: string,
-  status: Enums<'attendance_status'> | null,
+  status: Enums<'abril_trainer_attendance_status'> | null,
 ): Promise<ActionResult> {
   const supabase = await createClient()
 
   if (status === null) {
     const { error } = await supabase
-      .from('attendance')
+      .from('abril_trainer_attendance')
       .delete()
       .eq('class_id', classId)
       .eq('student_id', studentId)
@@ -127,7 +127,7 @@ export async function markAttendance(
     }
   } else {
     const { error } = await supabase
-      .from('attendance')
+      .from('abril_trainer_attendance')
       .upsert(
         { class_id: classId, student_id: studentId, date, status },
         { onConflict: 'class_id,student_id,date' },
@@ -162,7 +162,7 @@ export async function markAllPresent(
   }))
 
   const { error } = await supabase
-    .from('attendance')
+    .from('abril_trainer_attendance')
     .upsert(rows, { onConflict: 'class_id,student_id,date' })
 
   if (error) {

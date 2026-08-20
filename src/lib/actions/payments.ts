@@ -13,7 +13,7 @@ export async function createPayment(input: unknown): Promise<ActionResult<{ id: 
   const { paid, ...rest } = parsed.data
 
   const { data, error } = await supabase
-    .from('payments')
+    .from('abril_trainer_payments')
     .insert({ ...rest, paid_at: paid ? new Date().toISOString() : null })
     .select('id')
     .single()
@@ -33,7 +33,7 @@ export async function createPayment(input: unknown): Promise<ActionResult<{ id: 
 export async function togglePaid(id: string, paid: boolean): Promise<ActionResult> {
   const supabase = await createClient()
   const { error } = await supabase
-    .from('payments')
+    .from('abril_trainer_payments')
     .update({ paid_at: paid ? new Date().toISOString() : null })
     .eq('id', id)
 
@@ -49,7 +49,7 @@ export async function togglePaid(id: string, paid: boolean): Promise<ActionResul
 
 export async function deletePayment(id: string): Promise<ActionResult> {
   const supabase = await createClient()
-  const { error } = await supabase.from('payments').delete().eq('id', id)
+  const { error } = await supabase.from('abril_trainer_payments').delete().eq('id', id)
 
   if (error) {
     console.error('deletePayment:', error.message)

@@ -10,12 +10,12 @@ import type { Tables } from '@/types/database.types'
  * primer render sin pista de por qué. Es un orden de pasos perfectamente
  * plausible, así que acá se repara sola.
  */
-export async function getProfile(): Promise<Tables<'profiles'>> {
+export async function getProfile(): Promise<Tables<'abril_trainer_profiles'>> {
   const user = await requireUser()
   const supabase = await createClient()
 
   const { data, error } = await supabase
-    .from('profiles')
+    .from('abril_trainer_profiles')
     .select('id, role, full_name, photo_url, phone, business_name, created_at')
     .eq('id', user.id)
     .maybeSingle()
@@ -29,7 +29,7 @@ export async function getProfile(): Promise<Tables<'profiles'>> {
     'Entrenadora'
 
   const { data: created, error: insertError } = await supabase
-    .from('profiles')
+    .from('abril_trainer_profiles')
     .insert({ id: user.id, full_name: fallbackName, role: 'trainer' })
     .select('id, role, full_name, photo_url, phone, business_name, created_at')
     .single()

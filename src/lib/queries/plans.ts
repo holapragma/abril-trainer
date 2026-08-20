@@ -3,7 +3,7 @@ import type { Plan } from '@/types/domain'
 
 export async function getPlans(onlyActive = false): Promise<Plan[]> {
   const supabase = await createClient()
-  let query = supabase.from('plans').select('*').order('name')
+  let query = supabase.from('abril_trainer_plans').select('*').order('name')
   if (onlyActive) query = query.eq('active', true)
 
   const { data, error } = await query
@@ -13,7 +13,7 @@ export async function getPlans(onlyActive = false): Promise<Plan[]> {
 
 export async function getPlan(id: string): Promise<Plan | null> {
   const supabase = await createClient()
-  const { data, error } = await supabase.from('plans').select('*').eq('id', id).maybeSingle()
+  const { data, error } = await supabase.from('abril_trainer_plans').select('*').eq('id', id).maybeSingle()
   if (error) throw error
   return data
 }
@@ -22,7 +22,7 @@ export async function getPlan(id: string): Promise<Plan | null> {
 export async function getPlanUsage(): Promise<Map<string, number>> {
   const supabase = await createClient()
   const { data, error } = await supabase
-    .from('memberships')
+    .from('abril_trainer_memberships')
     .select('plan_id')
     .eq('status', 'activa')
 

@@ -7,7 +7,7 @@ import { ErrorNote } from '@/components/ui/states'
 import { updateProfile } from '@/lib/actions/auth'
 import type { Tables } from '@/types/database.types'
 
-export function ProfileForm({ profile }: { profile: Tables<'profiles'> }) {
+export function ProfileForm({ profile }: { profile: Tables<'abril_trainer_profiles'> }) {
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
   const [pending, startTransition] = useTransition()

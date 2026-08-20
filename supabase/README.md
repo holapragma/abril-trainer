@@ -11,17 +11,17 @@ supabase/
 ├── schema_completo.sql     ← todo junto, para pegar en el SQL Editor
 ├── migrations/             ← lo mismo, versionado (es la fuente de verdad)
 │   ├── 0001_types.sql          enums + utilidades + trigger de perfil
-│   ├── 0002_identity.sql       profiles, students
-│   ├── 0003_commercial.sql     plans, memberships, payments + vista de estado
-│   ├── 0004_exercises.sql      exercises, exercise_favorites
-│   ├── 0005_planning.sql       blocks, sessions, session_exercises, workout_logs
-│   ├── 0006_classes.sql        classes, enrollments, attendance + cupo
+│   ├── 0002_identity.sql       abril_trainer_profiles, abril_trainer_students
+│   ├── 0003_commercial.sql     abril_trainer_plans, abril_trainer_memberships, abril_trainer_payments + vista de estado
+│   ├── 0004_exercises.sql      abril_trainer_exercises, abril_trainer_exercise_favorites
+│   ├── 0005_planning.sql       abril_trainer_training_blocks, abril_trainer_training_sessions, abril_trainer_session_exercises, abril_trainer_workout_logs
+│   ├── 0006_classes.sql        abril_trainer_classes, abril_trainer_class_enrollments, abril_trainer_attendance + cupo
 │   ├── 0007_rls_helpers.sql    funciones auxiliares de las políticas
 │   ├── 0008_rls_policies.sql   RLS: activación + las 33 políticas
-│   ├── 0009_rpc.sql            duplicate_week, dashboard_summary
+│   ├── 0009_rpc.sql            abril_trainer_duplicate_week, abril_trainer_dashboard_summary
 │   ├── 0010_storage.sql        buckets y sus políticas
 │   ├── 0011_grants.sql         privilegios de tabla — SIN ESTO NADA FUNCIONA
-│   └── 0012_timezone.sql       app_today(): «hoy» en la zona de la entrenadora
+│   └── 0012_timezone.sql       abril_trainer_app_today(): «hoy» en la zona de la entrenadora
 └── tests/
     └── rls_test.sql        aislamiento entre entrenadoras + reglas de negocio
 ```
@@ -90,10 +90,10 @@ select c.relname from pg_class c
 **Authentication → Users → Add user → Create new user**. Email y contraseña.
 Marcar **Auto Confirm User**.
 
-El trigger `on_auth_user_created` le crea el perfil solo. Verificar:
+El trigger `abril_trainer_on_auth_user_created` le crea el perfil solo. Verificar:
 
 ```sql
-select id, full_name, role from profiles;
+select id, full_name, role from abril_trainer_profiles;
 ```
 
 **No habilitar el registro público.** En **Authentication → Sign In / Providers**,
@@ -144,9 +144,9 @@ Qué cubre:
 | 1b | Pero sí ve el catálogo global de ejercicios |
 | 2 | B no puede modificar ni borrar datos de A |
 | 2b | B no puede duplicar una semana de un bloque de A |
-| 2c | `dashboard_summary` de B viene en cero |
+| 2c | `abril_trainer_dashboard_summary` de B viene en cero |
 | 3c | `WITH CHECK`: A no puede crear registros a nombre de B |
-| 4 | `duplicate_week` copia sesiones y ejercicios conservando `reps` y `load` |
+| 4 | `abril_trainer_duplicate_week` copia sesiones y ejercicios conservando `reps` y `load` |
 | 4b | No se puede duplicar sobre una semana ya ocupada |
 | 4c | El cupo de clase se hace cumplir en la base |
 | 4d | Una sola membresía activa por alumno |
@@ -162,28 +162,28 @@ Qué cubre:
 Las razones completas están en `docs/ABRIL_ARCHITECTURE.md` del repo principal.
 Lo que más sorprende al leer el esquema:
 
-**`payments` no tiene columna de estado.** Un pago pendiente se vuelve vencido por
+**`abril_trainer_payments` no tiene columna de estado.** Un pago pendiente se vuelve vencido por
 el mero paso del tiempo. Guardarlo exigiría un cron que se rompe, se retrasa o se
 olvida — y entonces el dashboard miente. Se deriva en la vista
-`payments_with_status`, que siempre está bien.
+`abril_trainer_payments_with_status`, que siempre está bien.
 
 **Esa vista lleva `security_invoker = true`, y no es opcional.** Por defecto una
 vista de Postgres corre con los permisos de quien la creó, lo que **saltaría la
 RLS** y expondría los pagos de todas las alumnas a cualquier usuario autenticado.
 Es el error de seguridad más común en proyectos Supabase.
 
-**`session_exercises.reps` y `.load` son texto, no números.** Esto es una
+**`abril_trainer_session_exercises.reps` y `.load` son texto, no números.** Esto es una
 *prescripción*: Abril escribe «8-10», «AMRAP», «al 70%», «RPE 8», «peso corporal».
 Un `integer` la haría pelear con el formulario todos los días. Los números viven en
-`workout_logs`, que registra lo que realmente se hizo.
+`abril_trainer_workout_logs`, que registra lo que realmente se hizo.
 
 **No existe `training_weeks`.** Una semana no tiene atributos propios: es un
-número. `week_number` en `training_sessions` ahorra una tabla y un join en la
+número. `week_number` en `abril_trainer_training_sessions` ahorra una tabla y un join en la
 consulta más frecuente, y convierte «duplicar semana» en una sola operación.
 
 **No existe `class_sessions`.** Las clases son recurrentes y fijas. Materializar
 cada ocurrencia obligaría a un job que genere filas futuras, para grupos de 4-6
-personas. Las fechas concretas viven en `attendance.date`.
+personas. Las fechas concretas viven en `abril_trainer_attendance.date`.
 *Pendiente conocido:* cancelar o mover una clase puntual necesitará una tabla
 `class_exceptions(class_id, date, reason)` el día que haga falta.
 
@@ -193,23 +193,23 @@ migración no heredan los privilegios por defecto de Supabase, así que sin la
 migración 0011 toda consulta devuelve 42501 —«permission denied»— antes de que
 RLS llegue siquiera a evaluarse, por perfectas que sean las políticas.
 
-**Ninguna consulta usa `current_date`: usan `app_today()`.** Postgres y Vercel
+**Ninguna consulta usa `current_date`: usan `abril_trainer_app_today()`.** Postgres y Vercel
 corren en UTC; Abril está en UTC−3. Entre las 21:00 y medianoche hora argentina el
 servidor ya cree que es mañana, y la asistencia de la clase de las 19:00 marcada a
 las 21:30 se archivaba con la fecha equivocada. Su equivalente en el cliente es
 `src/lib/today.ts`; las dos caras tienen que coincidir.
 
-**`exercises.id` es `text`, no `uuid`.** Los ids del catálogo de GymMane
+**`abril_trainer_exercises.id` es `text`, no `uuid`.** Los ids del catálogo de GymMane
 (`EIeI8Vf`) ya son estables y coinciden con el nombre del archivo de media: la
 semilla queda idempotente y la URL se deriva del id sin columna extra.
 
-**`dashboard_summary` no filtra por `trainer_id` en ninguna parte.** Con
+**`abril_trainer_dashboard_summary` no filtra por `trainer_id` en ninguna parte.** Con
 `security invoker`, la RLS ya filtró cada tabla. Repetir el filtro duplicaría la
 fuente de verdad.
 
 **Las funciones auxiliares de RLS son `security definer` a propósito**: su consulta
 interna no vuelve a pasar por RLS, que es lo que evita la recursión infinita cuando
-una política de `students` necesita consultar `students`.
+una política de `abril_trainer_students` necesita consultar `abril_trainer_students`.
 
 ---
 

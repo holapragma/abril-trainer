@@ -2,12 +2,12 @@
 -- Clases recurrentes, inscripciones y asistencia.
 
 -- ─────────────────────────────────────────────────────────────────────────────
--- classes
+-- abril_trainer_classes
 -- ─────────────────────────────────────────────────────────────────────────────
 
-create table classes (
+create table abril_trainer_classes (
   id               uuid primary key default gen_random_uuid(),
-  trainer_id       uuid not null references profiles(id) on delete cascade,
+  trainer_id       uuid not null references abril_trainer_profiles(id) on delete cascade,
   name             text not null,
   weekday          smallint not null check (weekday between 1 and 7),
   start_time       time     not null,
@@ -17,28 +17,28 @@ create table classes (
   created_at       timestamptz not null default now()
 );
 
-comment on table classes is
-  'Plantilla recurrente, no ocurrencia. No existe class_sessions: las fechas concretas se calculan desde weekday + start_time y viven en attendance.date.';
-comment on column classes.weekday is 'ISO 8601: 1 = lunes … 7 = domingo.';
+comment on table abril_trainer_classes is
+  'Plantilla recurrente, no ocurrencia. No existe class_sessions: las fechas concretas se calculan desde weekday + start_time y viven en abril_trainer_attendance.date.';
+comment on column abril_trainer_classes.weekday is 'ISO 8601: 1 = lunes … 7 = domingo.';
 
-create index classes_trainer_idx on classes (trainer_id, weekday, start_time);
+create index abril_trainer_classes_trainer_idx on abril_trainer_classes (trainer_id, weekday, start_time);
 
 -- ─────────────────────────────────────────────────────────────────────────────
--- class_enrollments — el roster fijo de cada clase
+-- abril_trainer_class_enrollments — el roster fijo de cada clase
 -- ─────────────────────────────────────────────────────────────────────────────
 
-create table class_enrollments (
+create table abril_trainer_class_enrollments (
   id         uuid primary key default gen_random_uuid(),
-  class_id   uuid not null references classes(id)  on delete cascade,
-  student_id uuid not null references students(id) on delete cascade,
+  class_id   uuid not null references abril_trainer_classes(id)  on delete cascade,
+  student_id uuid not null references abril_trainer_students(id) on delete cascade,
   joined_at  date not null default current_date,
   unique (class_id, student_id)
 );
 
-create index enrollments_student_idx on class_enrollments (student_id);
+create index abril_trainer_enrollments_student_idx on abril_trainer_class_enrollments (student_id);
 
 -- El cupo se hace cumplir en la base, no solo en el formulario.
-create or replace function check_class_capacity()
+create or replace function abril_trainer_check_class_capacity()
 returns trigger
 language plpgsql
 security definer
@@ -48,8 +48,8 @@ declare
   v_capacity smallint;
   v_count    bigint;
 begin
-  select capacity into v_capacity from classes where id = new.class_id;
-  select count(*) into v_count    from class_enrollments where class_id = new.class_id;
+  select capacity into v_capacity from abril_trainer_classes where id = new.class_id;
+  select count(*) into v_count    from abril_trainer_class_enrollments where class_id = new.class_id;
 
   if v_count >= v_capacity then
     raise exception 'La clase ya está completa (% de % lugares)', v_count, v_capacity
@@ -60,23 +60,23 @@ begin
 end;
 $$;
 
-create trigger enforce_class_capacity
-  before insert on class_enrollments
-  for each row execute function check_class_capacity();
+create trigger abril_trainer_enforce_class_capacity
+  before insert on abril_trainer_class_enrollments
+  for each row execute function abril_trainer_check_class_capacity();
 
 -- ─────────────────────────────────────────────────────────────────────────────
--- attendance
+-- abril_trainer_attendance
 -- ─────────────────────────────────────────────────────────────────────────────
 
-create table attendance (
+create table abril_trainer_attendance (
   id         uuid primary key default gen_random_uuid(),
-  class_id   uuid not null references classes(id)  on delete cascade,
-  student_id uuid not null references students(id) on delete cascade,
+  class_id   uuid not null references abril_trainer_classes(id)  on delete cascade,
+  student_id uuid not null references abril_trainer_students(id) on delete cascade,
   date       date not null,
-  status     attendance_status not null,
+  status     abril_trainer_attendance_status not null,
   created_at timestamptz not null default now(),
   unique (class_id, student_id, date)
 );
 
-create index attendance_class_date_idx   on attendance (class_id, date);
-create index attendance_student_date_idx on attendance (student_id, date desc);
+create index abril_trainer_attendance_class_date_idx   on abril_trainer_attendance (class_id, date);
+create index abril_trainer_attendance_student_date_idx on abril_trainer_attendance (student_id, date desc);

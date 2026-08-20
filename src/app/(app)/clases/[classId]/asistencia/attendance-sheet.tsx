@@ -14,7 +14,7 @@ import type { AttendanceRow } from '@/types/domain'
 import type { Enums } from '@/types/database.types'
 
 type Row = AttendanceRow & { avatarUrl: string | null }
-type Status = Enums<'attendance_status'>
+type Status = Enums<'abril_trainer_attendance_status'>
 
 /**
  * Pasar lista.

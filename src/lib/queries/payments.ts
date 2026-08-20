@@ -8,7 +8,7 @@ export type PaymentWithStudent = PaymentWithStatus & {
 }
 
 /**
- * Se consulta la tabla `payments`, no la vista `payments_with_status`.
+ * Se consulta la tabla `abril_trainer_payments`, no la vista `abril_trainer_payments_with_status`.
  *
  * La vista existe y es correcta, pero para traer el nombre del alumno hace falta
  * un embed, y PostgREST no garantiza detectar relaciones a través de una vista.
@@ -19,8 +19,8 @@ export async function getPayments(status?: PaymentStatus): Promise<PaymentWithSt
   const supabase = await createClient()
 
   const { data, error } = await supabase
-    .from('payments')
-    .select('*, student:students(id, first_name, last_name, photo_url)')
+    .from('abril_trainer_payments')
+    .select('*, student:abril_trainer_students(id, first_name, last_name, photo_url)')
     .order('due_date', { ascending: false })
     .limit(200)
 
@@ -33,7 +33,7 @@ export async function getPayments(status?: PaymentStatus): Promise<PaymentWithSt
 export async function getStudentPayments(studentId: string): Promise<PaymentWithStatus[]> {
   const supabase = await createClient()
   const { data, error } = await supabase
-    .from('payments')
+    .from('abril_trainer_payments')
     .select('*')
     .eq('student_id', studentId)
     .order('due_date', { ascending: false })
@@ -44,7 +44,7 @@ export async function getStudentPayments(studentId: string): Promise<PaymentWith
 
 export async function getPaymentTotals() {
   const supabase = await createClient()
-  const { data, error } = await supabase.from('payments').select('amount, paid_at, due_date')
+  const { data, error } = await supabase.from('abril_trainer_payments').select('amount, paid_at, due_date')
 
   if (error) throw error
 

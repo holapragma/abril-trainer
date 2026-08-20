@@ -94,12 +94,12 @@ respuesta inmediata: pasar lista y reordenar ejercicios.
 
 **`reps` y `load` son texto, no números.** Es una *prescripción*: Abril escribe
 «8-10», «AMRAP», «al 70%», «RPE 8», «peso corporal». Un `integer` la obligaría a
-pelear con el formulario todos los días. Los números viven en `workout_logs`,
+pelear con el formulario todos los días. Los números viven en `abril_trainer_workout_logs`,
 que registra lo que realmente se hizo.
 
 **Los pagos no tienen columna de estado.** Un pendiente se vuelve vencido por el
 mero paso del tiempo; guardarlo exigiría un cron que se rompe, se retrasa o se
-olvida. Se deriva en la vista `payments_with_status`.
+olvida. Se deriva en la vista `abril_trainer_payments_with_status`.
 
 **Reordenar con flechas, no arrastrando.** Arrastrar dentro de una lista que hace
 scroll, en un navegador móvil, es frágil y poco accesible. Las flechas siempre
@@ -113,7 +113,7 @@ borre a Abril lo que acababa de escribir.
 en UTC y ella está en UTC−3: entre las 21:00 y medianoche el servidor ya cree que
 es mañana. Sin esto, pasar lista después de la clase de las 19:00 archivaba la
 asistencia con la fecha equivocada. `src/lib/today.ts` en el cliente y
-`app_today()` en SQL — las dos caras tienen que coincidir.
+`abril_trainer_app_today()` en SQL — las dos caras tienen que coincidir.
 
 **GRANT y RLS son dos cosas distintas y hacen falta las dos.** `GRANT` decide a
 qué tablas llega un rol; RLS, qué filas ve dentro. Sin los grants de la migración
@@ -160,7 +160,7 @@ entrenamientos por el alumno · offline-first · notificaciones push · chat ·
 exportar a PDF · multi-gimnasio · informes · reservas de cupo · apps nativas.
 
 El esquema y las políticas RLS ya contemplan el acceso del alumno
-(`students.user_id` y sus políticas de lectura), así que abrirlo más adelante no
+(`abril_trainer_students.user_id` y sus políticas de lectura), así que abrirlo más adelante no
 va a exigir migrar datos ni cambiar el esquema.
 
 ---

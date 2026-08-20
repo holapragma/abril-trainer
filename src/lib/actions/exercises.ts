@@ -12,7 +12,7 @@ export async function toggleFavorite(exerciseId: string): Promise<ActionResult<{
   const supabase = await createClient()
 
   const { data: existing } = await supabase
-    .from('exercise_favorites')
+    .from('abril_trainer_exercise_favorites')
     .select('exercise_id')
     .eq('exercise_id', exerciseId)
     .eq('trainer_id', userId)
@@ -20,7 +20,7 @@ export async function toggleFavorite(exerciseId: string): Promise<ActionResult<{
 
   if (existing) {
     const { error } = await supabase
-      .from('exercise_favorites')
+      .from('abril_trainer_exercise_favorites')
       .delete()
       .eq('exercise_id', exerciseId)
       .eq('trainer_id', userId)
@@ -33,7 +33,7 @@ export async function toggleFavorite(exerciseId: string): Promise<ActionResult<{
   }
 
   const { error } = await supabase
-    .from('exercise_favorites')
+    .from('abril_trainer_exercise_favorites')
     .insert({ exercise_id: exerciseId, trainer_id: userId })
 
   if (error) {
@@ -58,7 +58,7 @@ export async function createExercise(input: unknown): Promise<ActionResult<{ id:
   const id = `c_${crypto.randomUUID()}`
 
   const { data, error } = await supabase
-    .from('exercises')
+    .from('abril_trainer_exercises')
     .insert({
       id,
       owner_id: userId,
@@ -86,7 +86,7 @@ export async function updateExercise(id: string, input: unknown): Promise<Action
 
   const supabase = await createClient()
   const { error } = await supabase
-    .from('exercises')
+    .from('abril_trainer_exercises')
     .update({
       name: parsed.data.name,
       primary_muscle: parsed.data.primary_muscle,
@@ -108,10 +108,10 @@ export async function updateExercise(id: string, input: unknown): Promise<Action
 
 export async function deleteExercise(id: string): Promise<ActionResult> {
   const supabase = await createClient()
-  const { error } = await supabase.from('exercises').delete().eq('id', id)
+  const { error } = await supabase.from('abril_trainer_exercises').delete().eq('id', id)
 
   if (error) {
-    // session_exercises.exercise_id es on delete restrict: borrar un ejercicio
+    // abril_trainer_session_exercises.exercise_id es on delete restrict: borrar un ejercicio
     // no puede vaciar en silencio las planificaciones que lo usan.
     if (error.code === '23503') {
       return fail('Este ejercicio está en alguna planificación. Quitalo de ahí primero.')
@@ -153,7 +153,7 @@ export async function uploadExerciseMedia(
     return fail('No se pudo subir el archivo')
   }
 
-  const { error } = await supabase.from('exercises').update({ media_url: path }).eq('id', exerciseId)
+  const { error } = await supabase.from('abril_trainer_exercises').update({ media_url: path }).eq('id', exerciseId)
   if (error) {
     console.error('uploadExerciseMedia/update:', error.message)
     return fail('El archivo se subió pero no se pudo asociar')

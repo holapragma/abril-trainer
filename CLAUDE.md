@@ -11,7 +11,7 @@ Es un proyecto de un solo tenant activo (una entrenadora, Abril) pero con **mult
 - **Usuario objetivo:** una entrenadora personal (hoy una sola cuenta, `abril@demo.local` en local), que trabaja desde el celular "entre alumno y alumno", a menudo con mal wifi de gimnasio.
 - **Objetivo principal:** que cargar datos en el momento (durante o justo después de una clase) sea rápido y no rompa lo que ya estaba escrito.
 
-El alcance está deliberadamente acotado. **Fuera del MVP a propósito** (ver `README.md`): Mercado Pago, facturación electrónica, IA, acceso del alumno, registro de entrenamientos por el alumno, offline-first, notificaciones push, chat, exportar a PDF, multi-gimnasio, informes, reservas de cupo, apps nativas. El esquema y las políticas RLS ya contemplan el acceso del alumno (`students.user_id`, función `is_my_student_record`) para no tener que migrar datos si se abre más adelante — pero **no está construido**, no lo asumas disponible.
+El alcance está deliberadamente acotado. **Fuera del MVP a propósito** (ver `README.md`): Mercado Pago, facturación electrónica, IA, acceso del alumno, registro de entrenamientos por el alumno, offline-first, notificaciones push, chat, exportar a PDF, multi-gimnasio, informes, reservas de cupo, apps nativas. El esquema y las políticas RLS ya contemplan el acceso del alumno (`abril_trainer_students.user_id`, función `abril_trainer_is_my_student_record`) para no tener que migrar datos si se abre más adelante — pero **no está construido**, no lo asumas disponible.
 
 # Core Principles
 
@@ -21,7 +21,7 @@ Estos principios están implementados en el código, no son aspiracionales — r
 2. **RLS es la barrera de seguridad real, no el código de la app.** Nunca escribas `.eq('trainer_id', …)` en una query. Si sentís que hace falta, es señal de que falta una política RLS, no de que el filtro va en TypeScript.
 3. **Las lecturas lanzan, las escrituras devuelven un resultado.** Ver `types/domain.ts` (`ActionResult`, `ok()`, `fail()`). Un error al guardar un formulario tiene que aparecer junto al botón, no reemplazar la pantalla.
 4. **Los mensajes de error son para la usuaria, no para el log.** "No se pudo crear el alumno", nunca el mensaje crudo de Postgres/Supabase. El detalle técnico va a `console.error`.
-5. **"Hoy" se calcula en la zona horaria de Abril (`America/Argentina/Buenos_Aires`), nunca en la del servidor.** Cliente: `src/lib/today.ts`. SQL: `app_today()` (migración 0012). Las dos caras tienen que coincidir siempre que agregues lógica de fechas.
+5. **"Hoy" se calcula en la zona horaria de Abril (`America/Argentina/Buenos_Aires`), nunca en la del servidor.** Cliente: `src/lib/today.ts`. SQL: `abril_trainer_app_today()` (migración 0012). Las dos caras tienen que coincidir siempre que agregues lógica de fechas.
 6. **Cuatro pestañas en la nav inferior, no cinco.** "Entrenamientos" no es un ítem de nivel superior a propósito: una planificación siempre pertenece a un alumno y se entra por su ficha.
 7. **`database.types.ts` es generado — nunca se edita a mano.** Se regenera con `npm run db:types` después de cada migración.
 
@@ -59,7 +59,7 @@ No hay ORM: se usa el cliente de Supabase (PostgREST) directo, tipado con `Datab
 
 **Deployment:** pensado para Vercel (serverless), pero no confirmado/vinculado en este checkout.
 
-**Principales módulos de dominio:** alumnos (`students`), planes comerciales (`plans`/`memberships`), pagos (`payments`, sin columna de estado — se deriva), planificación de entrenamiento (`training_blocks` → `training_sessions` → `session_exercises`, más `workout_logs` para lo realmente ejecutado), catálogo de ejercicios (`exercises`, 361 registros heredados de GymMane), clases grupales recurrentes (`classes`, `enrollments`, `attendance`).
+**Principales módulos de dominio:** alumnos (`abril_trainer_students`), planes comerciales (`abril_trainer_plans`/`abril_trainer_memberships`), pagos (`abril_trainer_payments`, sin columna de estado — se deriva), planificación de entrenamiento (`abril_trainer_training_blocks` → `abril_trainer_training_sessions` → `abril_trainer_session_exercises`, más `abril_trainer_workout_logs` para lo realmente ejecutado), catálogo de ejercicios (`abril_trainer_exercises`, 361 registros heredados de GymMane), clases grupales recurrentes (`abril_trainer_classes`, `abril_trainer_class_enrollments`, `abril_trainer_attendance`).
 
 # Project Structure
 
@@ -68,7 +68,7 @@ src/
 ├── app/
 │   ├── (auth)/login/                     login (fuera del shell)
 │   └── (app)/                            shell con BottomNav
-│       ├── page.tsx                      dashboard (RPC dashboard_summary)
+│       ├── page.tsx                      dashboard (RPC abril_trainer_dashboard_summary)
 │       ├── alumnos/[id]/                 resumen · entrenamiento · asistencia · pagos
 │       ├── clases/[classId]/asistencia/  pasar lista
 │       ├── pagos/ · planes/ · ejercicios/ · ajustes/
@@ -175,13 +175,13 @@ Detectadas en el código real, no genéricas:
 - **Cliente**: `@supabase/supabase-js` + `@supabase/ssr`, sin ORM. Tipado generado (`database.types.ts`).
 - **Migraciones son la fuente de verdad** (`supabase/migrations/0001…0012`, numeradas y secuenciales). `schema_completo.sql` es un consolidado regenerado desde ellas — **nunca se edita directo**, y **nunca se toca el esquema desde el panel web de Supabase**: lo que no está en una migración no existe.
 - **Al cambiar el esquema**: nueva migración numerada → `supabase db reset` en local → correr `supabase/tests/rls_test.sql` → regenerar tipos (`npm run db:types`) → regenerar `schema_completo.sql` → recién entonces `supabase db push` a producción y revisar el Security Advisor. (Procedimiento completo en `supabase/README.md`.)
-- **Relaciones clave**: `profiles` (1:1 con `auth.users`, `role` prepara acceso de alumno) → `students` (`trainer_id`) → `memberships` (una activa por alumno, constraint único parcial) → `payments`. Planificación: `training_blocks` → `training_sessions` → `session_exercises` (+ `workout_logs` para lo realmente hecho). Clases: `classes` → `attendance` (no existen filas por ocurrencia futura, solo se materializa la fecha real al pasar lista).
-- **RLS es obligatoria en las 14 tablas**, verificado por test (`rls_test.sql`, aserción #5). Las políticas usan funciones auxiliares `security definer` (`owns_student`, `owns_class`, `owns_training_session`, `is_my_student_record` en `0007_rls_helpers.sql`) para evitar recursión infinita al consultar la misma tabla que protegen.
+- **Relaciones clave**: `abril_trainer_profiles` (1:1 con `auth.users`, `role` prepara acceso de alumno) → `abril_trainer_students` (`trainer_id`) → `abril_trainer_memberships` (una activa por alumno, constraint único parcial) → `abril_trainer_payments`. Planificación: `abril_trainer_training_blocks` → `abril_trainer_training_sessions` → `abril_trainer_session_exercises` (+ `abril_trainer_workout_logs` para lo realmente hecho). Clases: `abril_trainer_classes` → `abril_trainer_attendance` (no existen filas por ocurrencia futura, solo se materializa la fecha real al pasar lista).
+- **RLS es obligatoria en las 14 tablas**, verificado por test (`rls_test.sql`, aserción #5). Las políticas usan funciones auxiliares `security definer` (`abril_trainer_owns_student`, `abril_trainer_owns_class`, `abril_trainer_owns_training_session`, `abril_trainer_is_my_student_record` en `0007_rls_helpers.sql`) para evitar recursión infinita al consultar la misma tabla que protegen.
 - **`GRANT` y RLS son dos cosas distintas y hacen falta las dos.** Sin los grants de `0011_grants.sql`, toda consulta devuelve `42501` antes de que RLS llegue a evaluarse.
-- **Vistas con `security_invoker = true` es obligatorio**, no opcional (ver `payments_with_status` en `0003_commercial.sql`) — por defecto una vista corre con permisos de quien la creó, lo que saltearía RLS.
-- **No agregar columnas de estado calculable.** El estado de pago (`pagado`/`pendiente`/`vencido`) se deriva de `paid_at`/`due_date`, tanto en SQL (vista `payments_with_status`) como en TS (`lib/payment-status.ts`) — las dos implementaciones tienen que coincidir si cambia la regla.
-- **`session_exercises.reps` y `.load` son `text`, no números** — es una prescripción libre ("8-10", "AMRAP", "al 70%"), no un dato numérico.
-- **Reglas de negocio en la base, no solo en el formulario**: el cupo de clase se hace cumplir con un trigger (`check_class_capacity`, `0006_classes.sql`), no confíes en que el cliente ya validó.
+- **Vistas con `security_invoker = true` es obligatorio**, no opcional (ver `abril_trainer_payments_with_status` en `0003_commercial.sql`) — por defecto una vista corre con permisos de quien la creó, lo que saltearía RLS.
+- **No agregar columnas de estado calculable.** El estado de pago (`pagado`/`pendiente`/`vencido`) se deriva de `paid_at`/`due_date`, tanto en SQL (vista `abril_trainer_payments_with_status`) como en TS (`lib/payment-status.ts`) — las dos implementaciones tienen que coincidir si cambia la regla.
+- **`abril_trainer_session_exercises.reps` y `.load` son `text`, no números** — es una prescripción libre ("8-10", "AMRAP", "al 70%"), no un dato numérico.
+- **Reglas de negocio en la base, no solo en el formulario**: el cupo de clase se hace cumplir con un trigger (`abril_trainer_check_class_capacity`, `0006_classes.sql`), no confíes en que el cliente ya validó.
 
 **REGLA IMPORTANTE — no negociable:** No modificar la estructura de producción ni borrar datos directamente. Cualquier cambio de esquema va por una migración nueva, probada en local primero. Antes de un cambio destructivo (`drop`, `delete` sin filtro, `truncate`, alterar una columna con datos), explicar las consecuencias y pedir confirmación explícita antes de ejecutar.
 
@@ -195,21 +195,21 @@ Detectadas en el código real, no genéricas:
   - `currentUserId()` — devuelve `null`, no lanza. Para **Server Actions**, donde un token vencido a mitad de un formulario tiene que dar un mensaje, no borrar lo que la usuaria escribió.
 - **Autorización = RLS**, no chequeos manuales en TypeScript. El código de la app no filtra por `trainer_id`; las políticas de Postgres son la única barrera. Si implementás una funcionalidad nueva que toca datos de otra tabla, verificá que tenga política RLS antes de asumir que está protegida.
 - **`SUPABASE_SERVICE_ROLE_KEY` salta toda la RLS.** Solo se usa localmente para scripts de semilla (`scripts/upload-media.ts`). Nunca debe llegar a una variable de entorno de Vercel ni ejecutarse en el navegador.
-- **`role` en `profiles`** ya distingue `trainer`/`student`, preparando el acceso futuro del alumno, pero **hoy solo existe el rol `trainer`** en uso real — no implementes UI para alumnos asumiendo que el acceso ya funciona.
+- **`role` en `abril_trainer_profiles`** ya distingue `trainer`/`student`, preparando el acceso futuro del alumno, pero **hoy solo existe el rol `trainer`** en uso real — no implementes UI para alumnos asumiendo que el acceso ya funciona.
 
 # Important Business Rules
 
 Estas reglas, detectadas en código y comentarios, tienen prioridad sobre cualquier suposición genérica:
 
 - **Un pago no tiene estado propio**: se vuelve "vencido" por el mero paso del tiempo. Guardar un estado exigiría un cron que se rompe, se retrasa o se olvida.
-- **`reps`/`load` son prescripción, no registro**: lo que Abril planifica ("8-10", "RPE 8") vive en `session_exercises` como texto; lo que realmente se hizo vive en `workout_logs`.
-- **No existe `training_weeks` como tabla**: una semana es solo un número (`week_number` en `training_sessions`). "Duplicar semana" es la RPC `duplicate_week`.
-- **No existe `class_sessions`**: las clases son recurrentes y fijas; las fechas concretas viven en `attendance.date`. *Pendiente conocido documentado en el propio repo*: cancelar/mover una clase puntual necesitará una tabla `class_exceptions` el día que haga falta — no la agregues preventivamente.
-- **Una sola membresía activa por alumno** (constraint único parcial en `memberships`). El precio de una membresía queda "congelado" al crearla: subir la tarifa del plan no debe alterar membresías vigentes ni el histórico.
+- **`reps`/`load` son prescripción, no registro**: lo que Abril planifica ("8-10", "RPE 8") vive en `abril_trainer_session_exercises` como texto; lo que realmente se hizo vive en `abril_trainer_workout_logs`.
+- **No existe `training_weeks` como tabla**: una semana es solo un número (`week_number` en `abril_trainer_training_sessions`). "Duplicar semana" es la RPC `abril_trainer_duplicate_week`.
+- **No existe `class_sessions`**: las clases son recurrentes y fijas; las fechas concretas viven en `abril_trainer_attendance.date`. *Pendiente conocido documentado en el propio repo*: cancelar/mover una clase puntual necesitará una tabla `class_exceptions` el día que haga falta — no la agregues preventivamente.
+- **Una sola membresía activa por alumno** (constraint único parcial en `abril_trainer_memberships`). El precio de una membresía queda "congelado" al crearla: subir la tarifa del plan no debe alterar membresías vigentes ni el histórico.
 - **"Hoy" siempre en zona horaria Argentina** (`America/Argentina/Buenos_Aires`), nunca UTC del servidor — ver Core Principles.
 - **El cupo de una clase se hace cumplir en la base** (trigger), no solo en el formulario.
-- **`exercises.id` es `text`, no `uuid`** — son los ids estables del catálogo de GymMane (ej. `EIeI8Vf`), coinciden con el nombre del archivo de media.
-- **`students.notes` es privado de la entrenadora**: nunca debe exponerse a un futuro acceso de alumno; si se construye esa vista, tiene que excluir esta columna explícitamente.
+- **`abril_trainer_exercises.id` es `text`, no `uuid`** — son los ids estables del catálogo de GymMane (ej. `EIeI8Vf`), coinciden con el nombre del archivo de media.
+- **`abril_trainer_students.notes` es privado de la entrenadora**: nunca debe exponerse a un futuro acceso de alumno; si se construye esa vista, tiene que excluir esta columna explícitamente.
 
 # Feature Development Rules
 
@@ -256,7 +256,7 @@ Al implementar una funcionalidad nueva:
 # Testing
 
 - **No hay framework de testing de JS/TS configurado** en este proyecto (sin Jest, Vitest, Playwright ni Testing Library en `package.json`). No asumas que existe una suite para correr — si hace falta cobertura automatizada de UI/lógica de cliente, es una decisión nueva a tomar con la usuaria, no algo a inventar sobre la marcha.
-- **La única suite de tests real es SQL**: `supabase/tests/rls_test.sql`, 11 aserciones que verifican aislamiento entre entrenadoras y reglas de negocio (cupo, membresía única activa, `duplicate_week`, etc. — lista completa en `supabase/README.md`). Se corre con `npm run db:test` (requiere `$DB_URL` del stack local) o siguiendo el procedimiento de `supabase/README.md`. El archivo termina en `rollback`: no deja datos.
+- **La única suite de tests real es SQL**: `supabase/tests/rls_test.sql`, 11 aserciones que verifican aislamiento entre entrenadoras y reglas de negocio (cupo, membresía única activa, `abril_trainer_duplicate_week`, etc. — lista completa en `supabase/README.md`). Se corre con `npm run db:test` (requiere `$DB_URL` del stack local) o siguiendo el procedimiento de `supabase/README.md`. El archivo termina en `rollback`: no deja datos.
 - **Verificación manual de UI**: correr `npm run dev` + stack de Supabase local (`supabase start` + seeds), loguearse con la cuenta demo y probar el flujo real en el navegador (mobile viewport). No hay atajo automatizado para esto en el repo.
 - Antes de dar un cambio por terminado: `npm run check` (typecheck + lint) como mínimo; `npm run db:test` si se tocó esquema o políticas.
 
@@ -279,7 +279,7 @@ Plantilla en `.env.example`; valores reales en `.env.local` (gitignored). No exi
 - **El middleware tiene que dejar pasar `manifest.json` e `icons/`** o la PWA no instala — el matcher de `src/middleware.ts` ya lo contempla; tenerlo en cuenta si se edita.
 - **No meter `await`s entre `createServerClient` y `getUser()`** en `lib/supabase/middleware.ts` — puede dejar la sesión a medio refrescar y provocar deslogueos intermitentes (comentado en el archivo).
 - **Un `.eq('trainer_id', …)` en una query nueva es una señal de alerta**, no una protección extra — probablemente falta la política RLS correspondiente en vez de necesitar el filtro en código.
-- **PostgREST y embeds a través de vistas**: por eso `payment-status.ts` recalcula el estado en TS en vez de consultar siempre `payments_with_status` — la vista no garantiza que PostgREST detecte la relación para el embed con `students`. Ver el comentario en el archivo antes de "simplificar" esto.
+- **PostgREST y embeds a través de vistas**: por eso `payment-status.ts` recalcula el estado en TS en vez de consultar siempre `abril_trainer_payments_with_status` — la vista no garantiza que PostgREST detecte la relación para el embed con `abril_trainer_students`. Ver el comentario en el archivo antes de "simplificar" esto.
 
 # Current State
 

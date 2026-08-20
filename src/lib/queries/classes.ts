@@ -5,8 +5,8 @@ import type { AttendanceRow, ClassWithCount, Klass } from '@/types/domain'
 export async function getClasses(): Promise<ClassWithCount[]> {
   const supabase = await createClient()
   const { data, error } = await supabase
-    .from('classes')
-    .select('*, class_enrollments(id)')
+    .from('abril_trainer_classes')
+    .select('*, class_enrollments:abril_trainer_class_enrollments(id)')
     .order('weekday')
     .order('start_time')
 
@@ -20,7 +20,7 @@ export async function getClasses(): Promise<ClassWithCount[]> {
 
 export async function getClass(id: string): Promise<Klass | null> {
   const supabase = await createClient()
-  const { data, error } = await supabase.from('classes').select('*').eq('id', id).maybeSingle()
+  const { data, error } = await supabase.from('abril_trainer_classes').select('*').eq('id', id).maybeSingle()
   if (error) throw error
   return data
 }
@@ -31,10 +31,10 @@ export async function getClassRoster(classId: string, date: string): Promise<Att
 
   const [enrollments, attendance] = await Promise.all([
     supabase
-      .from('class_enrollments')
-      .select('student:students(id, first_name, last_name, photo_url)')
+      .from('abril_trainer_class_enrollments')
+      .select('student:abril_trainer_students(id, first_name, last_name, photo_url)')
       .eq('class_id', classId),
-    supabase.from('attendance').select('student_id, status').eq('class_id', classId).eq('date', date),
+    supabase.from('abril_trainer_attendance').select('student_id, status').eq('class_id', classId).eq('date', date),
   ])
 
   if (enrollments.error) throw enrollments.error
@@ -66,7 +66,7 @@ export async function getClassRoster(classId: string, date: string): Promise<Att
 export async function getEnrolledIds(classId: string): Promise<Set<string>> {
   const supabase = await createClient()
   const { data, error } = await supabase
-    .from('class_enrollments')
+    .from('abril_trainer_class_enrollments')
     .select('student_id')
     .eq('class_id', classId)
 
@@ -78,8 +78,8 @@ export async function getEnrolledIds(classId: string): Promise<Set<string>> {
 export async function getStudentAttendance(studentId: string, limit = 40) {
   const supabase = await createClient()
   const { data, error } = await supabase
-    .from('attendance')
-    .select('id, date, status, class:classes(id, name, start_time)')
+    .from('abril_trainer_attendance')
+    .select('id, date, status, class:abril_trainer_classes(id, name, start_time)')
     .eq('student_id', studentId)
     .order('date', { ascending: false })
     .limit(limit)

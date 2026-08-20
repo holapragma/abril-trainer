@@ -56,7 +56,7 @@ export function ExercisePicker({
     const supabase = createClient()
 
     let query = supabase
-      .from('exercises')
+      .from('abril_trainer_exercises')
       .select('id, name, primary_muscle, equipment, owner_id')
       .order('name')
       .limit(60)
@@ -82,7 +82,7 @@ export function ExercisePicker({
     if (!open) return
     const supabase = createClient()
     supabase
-      .from('exercise_favorites')
+      .from('abril_trainer_exercise_favorites')
       .select('exercise_id')
       .then(({ data }) => setFavorites(new Set((data ?? []).map((f) => f.exercise_id))))
   }, [open])

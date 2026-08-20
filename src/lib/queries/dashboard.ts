@@ -16,7 +16,7 @@ const EMPTY: DashboardSummary = {
  */
 export async function getDashboard(): Promise<DashboardSummary> {
   const supabase = await createClient()
-  const { data, error } = await supabase.rpc('dashboard_summary')
+  const { data, error } = await supabase.rpc('abril_trainer_dashboard_summary')
 
   if (error) throw error
   if (!data) return EMPTY
@@ -36,10 +36,10 @@ export async function getStudentsWithoutPlan(limit = 5) {
 
   const [students, blocks] = await Promise.all([
     supabase
-      .from('students')
+      .from('abril_trainer_students')
       .select('id, first_name, last_name, photo_url')
       .eq('status', 'activo'),
-    supabase.from('training_blocks').select('student_id').eq('status', 'activo'),
+    supabase.from('abril_trainer_training_blocks').select('student_id').eq('status', 'activo'),
   ])
 
   if (students.error) throw students.error

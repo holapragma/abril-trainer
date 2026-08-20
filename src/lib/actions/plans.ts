@@ -14,7 +14,7 @@ export async function createPlan(input: unknown): Promise<ActionResult<{ id: str
   const supabase = await createClient()
 
   const { data, error } = await supabase
-    .from('plans')
+    .from('abril_trainer_plans')
     .insert({ ...parsed.data, trainer_id: userId })
     .select('id')
     .single()
@@ -33,7 +33,7 @@ export async function updatePlan(id: string, input: unknown): Promise<ActionResu
   if (!parsed.success) return fail('Revisá los datos', fieldErrorsOf(parsed.error))
 
   const supabase = await createClient()
-  const { error } = await supabase.from('plans').update(parsed.data).eq('id', id)
+  const { error } = await supabase.from('abril_trainer_plans').update(parsed.data).eq('id', id)
 
   if (error) {
     console.error('updatePlan:', error.message)
@@ -46,10 +46,10 @@ export async function updatePlan(id: string, input: unknown): Promise<ActionResu
 
 export async function deletePlan(id: string): Promise<ActionResult> {
   const supabase = await createClient()
-  const { error } = await supabase.from('plans').delete().eq('id', id)
+  const { error } = await supabase.from('abril_trainer_plans').delete().eq('id', id)
 
   if (error) {
-    // memberships.plan_id es on delete restrict: si el plan está en uso, no se
+    // abril_trainer_memberships.plan_id es on delete restrict: si el plan está en uso, no se
     // borra. Es deliberado — borrarlo descuadraría el histórico de pagos.
     if (error.code === '23503') {
       return fail('Este plan está asignado a algún alumno. Desactivalo en vez de borrarlo.')
@@ -79,7 +79,7 @@ export async function assignPlan(input: unknown): Promise<ActionResult> {
   // Solo puede haber una membresía activa por alumno (índice único parcial),
   // así que la anterior se finaliza antes de crear la nueva.
   const { error: closeErr } = await supabase
-    .from('memberships')
+    .from('abril_trainer_memberships')
     .update({ status: 'finalizada', ends_on: new Date().toISOString().slice(0, 10) })
     .eq('student_id', student_id)
     .eq('status', 'activa')
@@ -89,7 +89,7 @@ export async function assignPlan(input: unknown): Promise<ActionResult> {
     return fail('No se pudo cerrar el plan anterior')
   }
 
-  const { error } = await supabase.from('memberships').insert({ ...parsed.data, status: 'activa' })
+  const { error } = await supabase.from('abril_trainer_memberships').insert({ ...parsed.data, status: 'activa' })
 
   if (error) {
     console.error('assignPlan:', error.message)
@@ -104,7 +104,7 @@ export async function assignPlan(input: unknown): Promise<ActionResult> {
 export async function endMembership(studentId: string): Promise<ActionResult> {
   const supabase = await createClient()
   const { error } = await supabase
-    .from('memberships')
+    .from('abril_trainer_memberships')
     .update({ status: 'finalizada', ends_on: new Date().toISOString().slice(0, 10) })
     .eq('student_id', studentId)
     .eq('status', 'activa')

@@ -259,7 +259,7 @@ function main() {
     '-- owner_id NULL = catálogo global, visible para todas las entrenadoras.',
     '-- Idempotente: se puede volver a correr sin duplicar nada.',
     '',
-    'insert into exercises (id, owner_id, name, primary_muscle, secondary_muscles, equipment, difficulty, media_url, steps) values',
+    'insert into abril_trainer_exercises (id, owner_id, name, primary_muscle, secondary_muscles, equipment, difficulty, media_url, steps) values',
   ]
 
   const values = exercises.map((e) => {

@@ -4,7 +4,7 @@ import type { SessionWithExercises, TrainingBlock, TrainingSession } from '@/typ
 export async function getBlocks(studentId: string): Promise<TrainingBlock[]> {
   const supabase = await createClient()
   const { data, error } = await supabase
-    .from('training_blocks')
+    .from('abril_trainer_training_blocks')
     .select('*')
     .eq('student_id', studentId)
     .order('starts_on', { ascending: false })
@@ -16,7 +16,7 @@ export async function getBlocks(studentId: string): Promise<TrainingBlock[]> {
 export async function getBlock(blockId: string): Promise<TrainingBlock | null> {
   const supabase = await createClient()
   const { data, error } = await supabase
-    .from('training_blocks')
+    .from('abril_trainer_training_blocks')
     .select('*')
     .eq('id', blockId)
     .maybeSingle()
@@ -34,8 +34,8 @@ export async function getBlockSessions(
 ): Promise<(TrainingSession & { exerciseCount: number })[]> {
   const supabase = await createClient()
   const { data, error } = await supabase
-    .from('training_sessions')
-    .select('*, session_exercises(id)')
+    .from('abril_trainer_training_sessions')
+    .select('*, session_exercises:abril_trainer_session_exercises(id)')
     .eq('block_id', blockId)
     .order('week_number')
     .order('order_index')
@@ -53,9 +53,9 @@ export async function getBlockSessions(
 export async function getSession(sessionId: string): Promise<SessionWithExercises | null> {
   const supabase = await createClient()
   const { data, error } = await supabase
-    .from('training_sessions')
+    .from('abril_trainer_training_sessions')
     .select(
-      '*, session_exercises(*, exercise:exercises(id, name, primary_muscle, media_url, equipment))',
+      '*, session_exercises:abril_trainer_session_exercises(*, exercise:abril_trainer_exercises(id, name, primary_muscle, media_url, equipment))',
     )
     .eq('id', sessionId)
     .maybeSingle()

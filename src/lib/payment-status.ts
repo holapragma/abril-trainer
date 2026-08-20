@@ -4,14 +4,15 @@ import type { PaymentStatus } from '@/lib/constants'
 /**
  * Estado de un pago, derivado de paid_at y due_date.
  *
- * La misma regla vive en la vista SQL `payments_with_status` (útil para consultas
- * manuales y para la RPC del dashboard), pero la app la calcula acá a propósito.
+ * La misma regla vive en la vista SQL `abril_trainer_payments_with_status` (útil
+ * para consultas manuales y para la RPC del dashboard), pero la app la calcula
+ * acá a propósito.
  *
  * El motivo: para listar pagos con el nombre del alumno hace falta un embed
- * (`student:students(...)`), y PostgREST no garantiza detectar relaciones a
- * través de una vista. Consultando la tabla `payments`, que sí tiene la clave
- * foránea, el embed siempre funciona — y el estado es una función pura de dos
- * columnas, trivial de calcular y de testear.
+ * (`student:abril_trainer_students(...)`), y PostgREST no garantiza detectar
+ * relaciones a través de una vista. Consultando la tabla `abril_trainer_payments`,
+ * que sí tiene la clave foránea, el embed siempre funciona — y el estado es una
+ * función pura de dos columnas, trivial de calcular y de testear.
  */
 export function paymentStatus(p: {
   paid_at: string | null

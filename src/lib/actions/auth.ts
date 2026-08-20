@@ -65,7 +65,7 @@ export async function updateProfile(input: unknown): Promise<ActionResult> {
   const supabase = await createClient()
 
   const { error } = await supabase
-    .from('profiles')
+    .from('abril_trainer_profiles')
     .update({
       full_name: parsed.data.full_name,
       business_name: parsed.data.business_name || null,

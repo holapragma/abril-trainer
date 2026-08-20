@@ -13,7 +13,7 @@ export async function createBlock(input: unknown): Promise<ActionResult<{ id: st
 
   const supabase = await createClient()
   const { data, error } = await supabase
-    .from('training_blocks')
+    .from('abril_trainer_training_blocks')
     .insert({ ...parsed.data, status: 'activo' })
     .select('id')
     .single()
@@ -38,7 +38,7 @@ export async function updateBlock(
 
   const supabase = await createClient()
   const { error } = await supabase
-    .from('training_blocks')
+    .from('abril_trainer_training_blocks')
     .update({
       name: parsed.data.name,
       goal: parsed.data.goal,
@@ -59,7 +59,7 @@ export async function updateBlock(
 export async function finishBlock(id: string, studentId: string): Promise<ActionResult> {
   const supabase = await createClient()
   const { error } = await supabase
-    .from('training_blocks')
+    .from('abril_trainer_training_blocks')
     .update({ status: 'terminado' })
     .eq('id', id)
 
@@ -75,7 +75,7 @@ export async function finishBlock(id: string, studentId: string): Promise<Action
 
 export async function deleteBlock(id: string, studentId: string): Promise<ActionResult> {
   const supabase = await createClient()
-  const { error } = await supabase.from('training_blocks').delete().eq('id', id)
+  const { error } = await supabase.from('abril_trainer_training_blocks').delete().eq('id', id)
 
   if (error) {
     console.error('deleteBlock:', error.message)
@@ -100,7 +100,7 @@ export async function createSession(
 
   // El orden es el siguiente hueco dentro de la semana.
   const { data: existing } = await supabase
-    .from('training_sessions')
+    .from('abril_trainer_training_sessions')
     .select('order_index')
     .eq('block_id', parsed.data.block_id)
     .eq('week_number', parsed.data.week_number)
@@ -110,7 +110,7 @@ export async function createSession(
   const nextOrder = (existing?.[0]?.order_index ?? -1) + 1
 
   const { data, error } = await supabase
-    .from('training_sessions')
+    .from('abril_trainer_training_sessions')
     .insert({ ...parsed.data, order_index: nextOrder })
     .select('id')
     .single()
@@ -130,7 +130,7 @@ export async function updateSession(
   input: { day_label?: string; name?: string | null; notes?: string | null },
 ): Promise<ActionResult> {
   const supabase = await createClient()
-  const { error } = await supabase.from('training_sessions').update(input).eq('id', id)
+  const { error } = await supabase.from('abril_trainer_training_sessions').update(input).eq('id', id)
 
   if (error) {
     console.error('updateSession:', error.message)
@@ -143,7 +143,7 @@ export async function updateSession(
 
 export async function deleteSession(id: string, path: string): Promise<ActionResult> {
   const supabase = await createClient()
-  const { error } = await supabase.from('training_sessions').delete().eq('id', id)
+  const { error } = await supabase.from('abril_trainer_training_sessions').delete().eq('id', id)
 
   if (error) {
     console.error('deleteSession:', error.message)
@@ -168,10 +168,10 @@ export async function duplicateWeek(
   toWeek?: number,
 ): Promise<ActionResult<{ copied: number }>> {
   const supabase = await createClient()
-  const { data, error } = await supabase.rpc('duplicate_week', {
+  const { data, error } = await supabase.rpc('abril_trainer_duplicate_week', {
     p_block_id: blockId,
     p_from_week: fromWeek,
-    p_to_week: toWeek ?? null,
+    p_to_week: toWeek,
   })
 
   if (error) {
@@ -200,7 +200,7 @@ export async function addExercisesToSession(
   const supabase = await createClient()
 
   const { data: existing } = await supabase
-    .from('session_exercises')
+    .from('abril_trainer_session_exercises')
     .select('order_index')
     .eq('session_id', sessionId)
     .order('order_index', { ascending: false })
@@ -217,7 +217,7 @@ export async function addExercisesToSession(
     rest_seconds: 90,
   }))
 
-  const { error } = await supabase.from('session_exercises').insert(rows)
+  const { error } = await supabase.from('abril_trainer_session_exercises').insert(rows)
 
   if (error) {
     console.error('addExercisesToSession:', error.message)
@@ -239,7 +239,7 @@ export async function updateSessionExercise(
   const supabase = await createClient()
   const { session_id: _sid, exercise_id: _eid, ...fields } = parsed.data
 
-  const { error } = await supabase.from('session_exercises').update(fields).eq('id', id)
+  const { error } = await supabase.from('abril_trainer_session_exercises').update(fields).eq('id', id)
 
   if (error) {
     console.error('updateSessionExercise:', error.message)
@@ -252,7 +252,7 @@ export async function updateSessionExercise(
 
 export async function removeSessionExercise(id: string, path: string): Promise<ActionResult> {
   const supabase = await createClient()
-  const { error } = await supabase.from('session_exercises').delete().eq('id', id)
+  const { error } = await supabase.from('abril_trainer_session_exercises').delete().eq('id', id)
 
   if (error) {
     console.error('removeSessionExercise:', error.message)
@@ -278,8 +278,8 @@ export async function swapSessionExercises(
   const supabase = await createClient()
 
   const [r1, r2] = await Promise.all([
-    supabase.from('session_exercises').update({ order_index: b.order_index }).eq('id', a.id),
-    supabase.from('session_exercises').update({ order_index: a.order_index }).eq('id', b.id),
+    supabase.from('abril_trainer_session_exercises').update({ order_index: b.order_index }).eq('id', a.id),
+    supabase.from('abril_trainer_session_exercises').update({ order_index: a.order_index }).eq('id', b.id),
   ])
 
   if (r1.error || r2.error) {

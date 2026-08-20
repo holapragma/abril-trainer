@@ -18,7 +18,7 @@ import { fileURLToPath } from 'node:url'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const MEDIA_DIR = join(ROOT, 'media/catalog')
-const BUCKET = 'exercise-media'
+const BUCKET = 'abril_trainer_exercise-media'
 const CONCURRENCY = 8
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL
