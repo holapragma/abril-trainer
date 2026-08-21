@@ -32,9 +32,9 @@ insert into abril_trainer_plans (id, trainer_id, name, price) values
 insert into abril_trainer_memberships (student_id, plan_id, price) values
   ('aaaaaaaa-0000-0000-0000-000000000001','aaaaaaaa-0000-0000-0000-000000000002', 45000);
 insert into abril_trainer_payments (student_id, amount, due_date, paid_at) values
-  ('aaaaaaaa-0000-0000-0000-000000000001', 45000, current_date - 10, null),
-  ('aaaaaaaa-0000-0000-0000-000000000001', 45000, current_date + 10, null),
-  ('aaaaaaaa-0000-0000-0000-000000000001', 45000, current_date - 40, now());
+  ('aaaaaaaa-0000-0000-0000-000000000001', 45000, abril_trainer_app_today() - 10, null),
+  ('aaaaaaaa-0000-0000-0000-000000000001', 45000, abril_trainer_app_today() + 10, null),
+  ('aaaaaaaa-0000-0000-0000-000000000001', 45000, abril_trainer_app_today() - 40, now());
 -- on conflict: el test tiene que correr igual con el catálogo ya sembrado.
 insert into abril_trainer_exercises (id, name, primary_muscle) values
   ('EIeI8Vf','Press de banca con barra','chest')
@@ -49,11 +49,11 @@ insert into abril_trainer_session_exercises (session_id, exercise_id, order_inde
   ('aaaaaaaa-0000-0000-0000-000000000005','EIeI8Vf',0,5,'5','70%');
 insert into abril_trainer_classes (id, trainer_id, name, weekday, start_time, capacity) values
   ('aaaaaaaa-0000-0000-0000-000000000006','11111111-1111-1111-1111-111111111111','Fuerza',
-   extract(isodow from current_date)::smallint, '18:00', 2);
+   extract(isodow from abril_trainer_app_today())::smallint, '18:00', 2);
 insert into abril_trainer_class_enrollments (class_id, student_id) values
   ('aaaaaaaa-0000-0000-0000-000000000006','aaaaaaaa-0000-0000-0000-000000000001');
 insert into abril_trainer_attendance (class_id, student_id, date, status) values
-  ('aaaaaaaa-0000-0000-0000-000000000006','aaaaaaaa-0000-0000-0000-000000000001', current_date, 'presente');
+  ('aaaaaaaa-0000-0000-0000-000000000006','aaaaaaaa-0000-0000-0000-000000000001', abril_trainer_app_today(), 'presente');
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- 1. Aislamiento de lectura: B no ve nada de A
@@ -222,10 +222,59 @@ end $$;
 \echo '── 4g. Asistencia única por clase + alumno + fecha ──'
 do $$ begin
   insert into abril_trainer_attendance (class_id, student_id, date, status)
-  values ('aaaaaaaa-0000-0000-0000-000000000006','aaaaaaaa-0000-0000-0000-000000000001', current_date, 'ausente');
+  values ('aaaaaaaa-0000-0000-0000-000000000006','aaaaaaaa-0000-0000-0000-000000000001', abril_trainer_app_today(), 'ausente');
   raise warning 'FALLO: permitió doble asistencia el mismo día';
 exception when unique_violation then
   raise notice 'OK: rechazado -> unique(class_id, student_id, date)';
+end $$;
+
+\echo '── 4h. La asistencia no se registra en el futuro ──'
+do $$ begin
+  insert into abril_trainer_attendance (class_id, student_id, date, status)
+  values ('aaaaaaaa-0000-0000-0000-000000000006','aaaaaaaa-0000-0000-0000-00000000000a',
+          abril_trainer_app_today() + 7, 'presente');
+  raise warning 'FALLO: permitió asistencia en una fecha futura';
+exception when check_violation then
+  raise notice 'OK: rechazado -> %', sqlerrm;
+end $$;
+
+\echo '── 4i. abril_trainer_assign_plan: cierra la anterior y abre la nueva, atómico ──'
+insert into abril_trainer_plans (id, trainer_id, name, price) values
+  ('aaaaaaaa-0000-0000-0000-00000000000c','11111111-1111-1111-1111-111111111111','Virtual', 30000);
+select abril_trainer_assign_plan(
+  'aaaaaaaa-0000-0000-0000-000000000001',
+  'aaaaaaaa-0000-0000-0000-00000000000c',
+  28000) is not null as asignada;
+select status, price, ends_on is not null as tiene_cierre
+  from abril_trainer_memberships
+ where student_id = 'aaaaaaaa-0000-0000-0000-000000000001'
+ order by status;
+
+-- Si el insert falla, el update anterior tiene que irse con él: la membresía
+-- activa sigue siendo la que estaba.
+\echo '── 4j. Si el alta falla, no se pierde la membresía vigente ──'
+do $$
+declare v_activas int; v_plan uuid;
+begin
+  begin
+    perform abril_trainer_assign_plan(
+      'aaaaaaaa-0000-0000-0000-000000000001',
+      '99999999-9999-9999-9999-999999999999',  -- plan inexistente
+      1000);
+    raise warning 'FALLO: aceptó un plan que no existe';
+  exception when foreign_key_violation then
+    null;  -- esperado
+  end;
+
+  select count(*), min(plan_id::text)::uuid into v_activas, v_plan
+    from abril_trainer_memberships
+   where student_id = 'aaaaaaaa-0000-0000-0000-000000000001' and status = 'activa';
+
+  if v_activas = 1 and v_plan = 'aaaaaaaa-0000-0000-0000-00000000000c' then
+    raise notice 'OK: la membresía vigente sobrevivió al alta fallida';
+  else
+    raise warning 'FALLO: quedaron % membresía(s) activa(s) tras el alta fallida', v_activas;
+  end if;
 end $$;
 
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -248,5 +297,51 @@ select c.relname as tabla,
 select c.relname as tabla_desprotegida
   from pg_class c join pg_namespace n on n.oid = c.relnamespace
  where n.nspname = 'public' and c.relkind = 'r' and not c.relrowsecurity;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- 6. El alumno y la columna notes
+-- ─────────────────────────────────────────────────────────────────────────────
+--
+-- notes es privado de la entrenadora. Como no existen políticas por columna y
+-- alumno y entrenadora comparten el rol authenticated, el alumno no tiene
+-- SELECT sobre abril_trainer_students: lee su ficha por
+-- abril_trainer_my_student_record(), que no devuelve notes.
+
+reset role;
+
+insert into auth.users (id, email, raw_user_meta_data) values
+  ('33333333-3333-3333-3333-333333333333', 'alumno@test.com', '{"full_name":"Juan Pérez","role":"student"}');
+update abril_trainer_students
+   set user_id = '33333333-3333-3333-3333-333333333333'
+ where id = 'aaaaaaaa-0000-0000-0000-000000000001';
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"33333333-3333-3333-3333-333333333333"}';
+
+\echo '── 6. El alumno no lee su ficha por la tabla (debe dar 0) ──'
+select count(*) as filas_visibles_en_la_tabla from abril_trainer_students;
+
+\echo '── 6b. Sí la lee por la función, y sin notes ──'
+select count(*) as filas, bool_and(first_name = 'Juan') as es_su_ficha
+  from abril_trainer_my_student_record();
+
+do $$ begin
+  perform notes from abril_trainer_my_student_record();
+  raise warning 'FALLO DE SEGURIDAD: la función expone notes';
+exception when undefined_column then
+  raise notice 'OK: abril_trainer_my_student_record() no tiene columna notes';
+end $$;
+
+\echo '── 6c. El alumno sigue viendo lo suyo por los helpers (pagos, asistencia) ──'
+select 'abril_trainer_payments' as tabla, count(*) as visibles from abril_trainer_payments
+union all select 'abril_trainer_attendance',       count(*) from abril_trainer_attendance
+union all select 'abril_trainer_class_enrollments', count(*) from abril_trainer_class_enrollments
+union all select 'abril_trainer_classes',           count(*) from abril_trainer_classes
+order by 1;
+
+\echo '── 6d. Y no ve nada de otro alumno ──'
+select count(*) as fichas_ajenas_visibles
+  from abril_trainer_memberships
+ where student_id <> 'aaaaaaaa-0000-0000-0000-000000000001';
 
 rollback;

@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient, currentUserId } from '@/lib/supabase/server'
 import { fieldErrorsOf, membershipSchema, planSchema } from '@/lib/schemas'
+import { todayISO } from '@/lib/today'
 import { fail, ok, type ActionResult } from '@/types/domain'
 
 export async function createPlan(input: unknown): Promise<ActionResult<{ id: string }>> {
@@ -68,32 +69,28 @@ export async function deletePlan(id: string): Promise<ActionResult> {
  * El precio se copia del plan pero queda congelado en la membresía: si Abril
  * sube la tarifa el año que viene, las membresías vigentes no cambian de importe
  * y el histórico sigue cuadrando.
+ *
+ * Va por RPC y no por dos escrituras seguidas: cerrar la membresía anterior y
+ * abrir la nueva tienen que pasar juntas o no pasar. Antes, si el alta fallaba,
+ * el alumno se quedaba sin plan y el mensaje de error no lo decía.
  */
 export async function assignPlan(input: unknown): Promise<ActionResult> {
   const parsed = membershipSchema.safeParse(input)
   if (!parsed.success) return fail('Revisá los datos', fieldErrorsOf(parsed.error))
 
   const supabase = await createClient()
-  const { student_id } = parsed.data
+  const { student_id, plan_id, price, starts_on } = parsed.data
 
-  // Solo puede haber una membresía activa por alumno (índice único parcial),
-  // así que la anterior se finaliza antes de crear la nueva.
-  const { error: closeErr } = await supabase
-    .from('abril_trainer_memberships')
-    .update({ status: 'finalizada', ends_on: new Date().toISOString().slice(0, 10) })
-    .eq('student_id', student_id)
-    .eq('status', 'activa')
-
-  if (closeErr) {
-    console.error('assignPlan/close:', closeErr.message)
-    return fail('No se pudo cerrar el plan anterior')
-  }
-
-  const { error } = await supabase.from('abril_trainer_memberships').insert({ ...parsed.data, status: 'activa' })
+  const { error } = await supabase.rpc('abril_trainer_assign_plan', {
+    p_student_id: student_id,
+    p_plan_id: plan_id,
+    p_price: price,
+    p_starts_on: starts_on,
+  })
 
   if (error) {
     console.error('assignPlan:', error.message)
-    return fail('No se pudo asignar el plan')
+    return fail('No se pudo asignar el plan. El plan anterior sigue vigente.')
   }
 
   revalidatePath(`/alumnos/${student_id}`)
@@ -105,7 +102,7 @@ export async function endMembership(studentId: string): Promise<ActionResult> {
   const supabase = await createClient()
   const { error } = await supabase
     .from('abril_trainer_memberships')
-    .update({ status: 'finalizada', ends_on: new Date().toISOString().slice(0, 10) })
+    .update({ status: 'finalizada', ends_on: todayISO() })
     .eq('student_id', studentId)
     .eq('status', 'activa')
 
@@ -115,5 +112,6 @@ export async function endMembership(studentId: string): Promise<ActionResult> {
   }
 
   revalidatePath(`/alumnos/${studentId}`)
+  revalidatePath('/')
   return ok(undefined)
 }
