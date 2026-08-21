@@ -1,5 +1,6 @@
 import { differenceInYears, format, isValid, parseISO } from 'date-fns'
 import { es } from 'date-fns/locale'
+import { daysBetween, todayISO } from '@/lib/today'
 
 // ── Dinero ───────────────────────────────────────────────────────────────────
 
@@ -63,17 +64,22 @@ export function formatTime(value: string | null | undefined): string {
 
 export function age(birthdate: string | null | undefined): number | null {
   const d = toDate(birthdate)
-  return d ? differenceInYears(new Date(), d) : null
+  // «Hoy» en la zona de Abril, no la del servidor: si no, entre las 21:00 y
+  // medianoche alguien cumple años un día antes de tiempo.
+  return d ? differenceInYears(new Date(`${todayISO()}T12:00:00`), d) : null
 }
 
-/** Días hasta una fecha. Negativo = ya pasó. */
+/**
+ * Días hasta una fecha 'YYYY-MM-DD'. Negativo = ya pasó.
+ *
+ * Se compara contra el «hoy» de la zona de Abril: con la medianoche local del
+ * servidor, un pago que vence mañana decía «vence hoy» desde las 21:00.
+ */
 export function daysUntil(value: string | null | undefined): number | null {
-  const d = toDate(value)
-  if (!d) return null
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  d.setHours(0, 0, 0, 0)
-  return Math.round((d.getTime() - today.getTime()) / 86_400_000)
+  if (!value) return null
+  const iso = typeof value === 'string' ? value.slice(0, 10) : value
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return null
+  return daysBetween(iso)
 }
 
 /** 'vence en 3 días' / 'venció hace 2 días' / 'vence hoy' */

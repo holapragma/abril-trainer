@@ -8,12 +8,13 @@ import { EmptyState } from '@/components/ui/states'
 import { getClasses } from '@/lib/queries/classes'
 import { WEEKDAYS } from '@/lib/constants'
 import { formatTime } from '@/lib/format'
+import { todayWeekday } from '@/lib/today'
 
 export const metadata: Metadata = { title: 'Clases · Abril Trainer' }
 
 export default async function ClasesPage() {
   const classes = await getClasses()
-  const todayIso = new Date().getDay() === 0 ? 7 : new Date().getDay()
+  const todayIso = todayWeekday()
 
   return (
     <>

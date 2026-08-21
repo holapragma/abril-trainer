@@ -10,6 +10,7 @@ import { ErrorNote } from '@/components/ui/states'
 import { assignPlan, endMembership } from '@/lib/actions/plans'
 import { formatDate, formatMoney } from '@/lib/format'
 import { MODALITY } from '@/lib/constants'
+import { todayISO } from '@/lib/today'
 import { cn } from '@/lib/cn'
 import type { MembershipWithPlan, Plan } from '@/types/domain'
 
@@ -44,7 +45,7 @@ export function AssignPlanForm({
       const res = await assignPlan({
         student_id: studentId,
         plan_id: selected.id,
-        starts_on: new Date().toISOString().slice(0, 10),
+        starts_on: todayISO(),
         price: price === '' ? selected.price : Number(price),
       })
       if (res.ok) {

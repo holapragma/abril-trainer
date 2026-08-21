@@ -10,6 +10,7 @@ import { Skeleton } from '@/components/ui/states'
 import { getDashboard, getStudentsWithoutPlan } from '@/lib/queries/dashboard'
 import { getProfile } from '@/lib/queries/profile'
 import { formatMoneyShort, formatTime, fullName, initials, pluralize } from '@/lib/format'
+import { todayHour } from '@/lib/today'
 
 export default function InicioPage() {
   return (
@@ -28,7 +29,8 @@ export default function InicioPage() {
 
 async function Greeting() {
   const profile = await getProfile()
-  const hour = new Date().getHours()
+  // La hora de Abril, no la del servidor: en UTC el saludo se adelanta tres horas.
+  const hour = todayHour()
   const saludo = hour < 6 ? 'Buenas noches' : hour < 13 ? 'Buen día' : hour < 20 ? 'Buenas tardes' : 'Buenas noches'
   const nombre = profile.full_name.split(' ')[0]
 

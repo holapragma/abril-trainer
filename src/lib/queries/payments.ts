@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { withStatus } from '@/lib/payment-status'
+import { appDateOf, startOfMonthISO } from '@/lib/today'
 import type { PaymentStatus } from '@/lib/constants'
 import type { PaymentWithStatus } from '@/types/domain'
 
@@ -50,13 +51,14 @@ export async function getPaymentTotals() {
 
   const rows = (data ?? []).map((p) => withStatus(p))
 
-  const startOfMonth = new Date()
-  startOfMonth.setDate(1)
-  startOfMonth.setHours(0, 0, 0, 0)
+  // El mes arranca en la zona de Abril, igual que en abril_trainer_app_today():
+  // con la fecha del servidor, este total y el del dashboard se contradicen
+  // durante las primeras horas del día 1.
+  const desde = startOfMonthISO()
 
   return {
     cobradoMes: rows
-      .filter((p) => p.paid_at && new Date(p.paid_at) >= startOfMonth)
+      .filter((p) => p.paid_at && appDateOf(p.paid_at) >= desde)
       .reduce((sum, p) => sum + Number(p.amount), 0),
     pendientes: rows.filter((p) => p.status === 'pendiente').length,
     vencidos: rows.filter((p) => p.status === 'vencido').length,
