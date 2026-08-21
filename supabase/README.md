@@ -184,6 +184,18 @@ Es el error de seguridad más común en proyectos Supabase.
 Un `integer` la haría pelear con el formulario todos los días. Los números viven en
 `abril_trainer_workout_logs`, que registra lo que realmente se hizo.
 
+**`abril_trainer_workout_logs` existe y la app todavía no la usa.** Es
+deliberado y conviene tenerlo escrito para que no vuelva a aparecer como
+hallazgo: la tabla, sus índices y sus cinco políticas RLS están desde 0005 para
+que el día que se registre lo realmente entrenado —por Abril o por el alumno—
+no haga falta migrar datos ni retrofitear políticas sobre filas en producción.
+Hoy no hay ninguna query ni pantalla que la toque, y **eso no es un olvido**.
+Para usarla harían falta tres cosas: una query de lectura por alumno, una
+Server Action de alta, y decidir el esquema del `payload` (hoy `jsonb` libre a
+propósito, para no congelar una forma antes de saber cómo se registra). Mientras
+tanto se deja intacta: eliminarla y recrearla más tarde costaría más que
+mantenerla vacía.
+
 **No existe `training_weeks`.** Una semana no tiene atributos propios: es un
 número. `week_number` en `abril_trainer_training_sessions` ahorra una tabla y un join en la
 consulta más frecuente, y convierte «duplicar semana» en una sola operación.

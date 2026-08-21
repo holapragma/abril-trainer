@@ -1,0 +1,28 @@
+# Lo mínimo que hace falta para que nadie tenga que acordarse de correr `npm run check`.
+#
+# Los tests de RLS (`npm run db:test`) NO corren acá: necesitan un stack de
+# Supabase levantado. Son un paso local obligatorio antes de un `db push`, y así
+# está documentado en supabase/README.md.
+
+name: check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # typecheck + lint, el mismo comando que se corre en local.
+      - run: npm run check
