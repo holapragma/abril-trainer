@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient, currentUserId } from '@/lib/supabase/server'
 import { classSchema, fieldErrorsOf } from '@/lib/schemas'
+import { todayISO } from '@/lib/today'
 import { fail, ok, type ActionResult } from '@/types/domain'
 import type { Enums } from '@/types/database.types'
 
@@ -99,11 +100,20 @@ export async function unenrollStudent(classId: string, studentId: string): Promi
   return ok(undefined)
 }
 
+/** Una fecha de asistencia tiene formato ISO y no está en el futuro. */
+function invalidDate(date: string): boolean {
+  return !/^\d{4}-\d{2}-\d{2}$/.test(date) || date > todayISO()
+}
+
 /**
  * Marca la asistencia de un alumno en una fecha.
  *
  * Upsert sobre (class_id, student_id, date), que es la clave única: tocar dos
  * veces al mismo alumno corrige la marca en vez de fallar.
+ *
+ * La fecha llega de la URL: se valida acá además de en la base (trigger
+ * abril_trainer_enforce_attendance_date), para dar un mensaje en español en vez
+ * de un error de Postgres.
  */
 export async function markAttendance(
   classId: string,
@@ -111,6 +121,8 @@ export async function markAttendance(
   date: string,
   status: Enums<'abril_trainer_attendance_status'> | null,
 ): Promise<ActionResult> {
+  if (invalidDate(date)) return fail('Esa fecha no es válida para pasar lista')
+
   const supabase = await createClient()
 
   if (status === null) {
@@ -152,6 +164,7 @@ export async function markAllPresent(
   date: string,
 ): Promise<ActionResult<{ marked: number }>> {
   if (studentIds.length === 0) return ok({ marked: 0 })
+  if (invalidDate(date)) return fail('Esa fecha no es válida para pasar lista')
 
   const supabase = await createClient()
   const rows = studentIds.map((student_id) => ({

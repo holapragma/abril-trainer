@@ -729,15 +729,44 @@ export type Database = {
       }
     }
     Functions: {
+      abril_trainer_app_date: { Args: { ts: string }; Returns: string }
       abril_trainer_app_today: { Args: never; Returns: string }
+      abril_trainer_assign_plan: {
+        Args: {
+          p_plan_id: string
+          p_price: number
+          p_starts_on?: string
+          p_student_id: string
+        }
+        Returns: string
+      }
       abril_trainer_dashboard_summary: { Args: never; Returns: Json }
       abril_trainer_duplicate_week: {
         Args: { p_block_id: string; p_from_week: number; p_to_week?: number }
         Returns: number
       }
+      abril_trainer_is_my_class: { Args: { cid: string }; Returns: boolean }
       abril_trainer_is_my_student_record: {
         Args: { sid: string }
         Returns: boolean
+      }
+      abril_trainer_is_my_trainer: { Args: { tid: string }; Returns: boolean }
+      abril_trainer_my_student_record: {
+        Args: never
+        Returns: {
+          birthdate: string
+          email: string
+          first_name: string
+          goal: string
+          id: string
+          joined_at: string
+          last_name: string
+          modality: Database["public"]["Enums"]["abril_trainer_modality"]
+          phone: string
+          photo_url: string
+          status: Database["public"]["Enums"]["abril_trainer_student_status"]
+          trainer_id: string
+        }[]
       }
       abril_trainer_owns_class: { Args: { cid: string }; Returns: boolean }
       abril_trainer_owns_student: { Args: { sid: string }; Returns: boolean }

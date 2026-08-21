@@ -9,6 +9,7 @@ import { Field, Input } from '@/components/ui/field'
 import { ErrorNote } from '@/components/ui/states'
 import { createBlock } from '@/lib/actions/planning'
 import { cn } from '@/lib/cn'
+import { todayISO } from '@/lib/today'
 
 /** Duraciones típicas: presencial cambia cada 1-2 semanas, virtual cada 4-6. */
 const PRESETS = [1, 2, 4, 6, 8, 12]
@@ -103,7 +104,7 @@ export function NewBlockButton({ studentId }: { studentId: string }) {
               name="starts_on"
               type="date"
               required
-              defaultValue={new Date().toISOString().slice(0, 10)}
+              defaultValue={todayISO()}
             />
           </Field>
 

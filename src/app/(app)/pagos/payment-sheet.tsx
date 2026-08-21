@@ -7,13 +7,12 @@ import { Sheet } from '@/components/ui/sheet'
 import { ErrorNote } from '@/components/ui/states'
 import { createPayment } from '@/lib/actions/payments'
 import { fullName } from '@/lib/format'
+import { addMonths, todayISO } from '@/lib/today'
 import type { StudentListItem } from '@/types/domain'
 
 /** Vencimiento por defecto: dentro de un mes, que es el ciclo habitual. */
 function defaultDueDate(): string {
-  const d = new Date()
-  d.setMonth(d.getMonth() + 1)
-  return d.toISOString().slice(0, 10)
+  return addMonths(todayISO(), 1)
 }
 
 export function PaymentSheet({

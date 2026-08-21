@@ -7,6 +7,7 @@ import { Field, Input, SegmentedField, Textarea } from '@/components/ui/field'
 import { ErrorNote } from '@/components/ui/states'
 import { createStudent, updateStudent } from '@/lib/actions/students'
 import { formatDateInput } from '@/lib/format'
+import { todayISO } from '@/lib/today'
 import type { Enums } from '@/types/database.types'
 import type { Student } from '@/types/domain'
 
@@ -171,7 +172,7 @@ export function StudentForm({ student }: { student?: Student }) {
               id="joined_at"
               name="joined_at"
               type="date"
-              defaultValue={formatDateInput(student?.joined_at ?? new Date())}
+              defaultValue={student?.joined_at ? formatDateInput(student.joined_at) : todayISO()}
             />
           </Field>
         </div>

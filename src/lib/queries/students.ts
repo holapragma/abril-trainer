@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { withStatus } from '@/lib/payment-status'
+import { addDays, todayISO } from '@/lib/today'
 import type { Enums } from '@/types/database.types'
 import type {
   MembershipWithPlan,
@@ -81,7 +82,7 @@ export async function getStudentOverview(studentId: string) {
       .from('abril_trainer_attendance')
       .select('status')
       .eq('student_id', studentId)
-      .gte('date', new Date(Date.now() - 30 * 86_400_000).toISOString().slice(0, 10)),
+      .gte('date', addDays(todayISO(), -30)),
   ])
 
   if (blocks.error) throw blocks.error

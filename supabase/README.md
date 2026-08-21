@@ -4,7 +4,7 @@ Esquema, políticas RLS y funciones de Supabase. **14 tablas, 34 políticas.**
 
 Validado contra un stack de Supabase real (`supabase start`): las doce migraciones
 aplican limpias en orden, el consolidado aplica de una sola pasada, la app recorre
-sus 18 pantallas sin un error, y `tests/rls_test.sql` pasa con 11 aserciones.
+sus 18 pantallas sin un error, y `tests/rls_test.sql` pasa con 14 aserciones.
 
 ```
 supabase/
@@ -21,7 +21,9 @@ supabase/
 │   ├── 0009_rpc.sql            abril_trainer_duplicate_week, abril_trainer_dashboard_summary
 │   ├── 0010_storage.sql        buckets y sus políticas
 │   ├── 0011_grants.sql         privilegios de tabla — SIN ESTO NADA FUNCIONA
-│   └── 0012_timezone.sql       abril_trainer_app_today(): «hoy» en la zona de la entrenadora
+│   ├── 0012_timezone.sql       abril_trainer_app_today(): «hoy» en la zona de la entrenadora
+│   └── 0013_correcciones.sql   defaults con app_today(), assign_plan atómico,
+│                               notes fuera del alcance del alumno, asistencia sin futuro
 └── tests/
     └── rls_test.sql        aislamiento entre entrenadoras + reglas de negocio
 ```
@@ -153,7 +155,12 @@ Qué cubre:
 | 4e | No se borra un ejercicio que está en una planificación |
 | 4f | Nadie puede borrar el catálogo global |
 | 4g | Una sola marca de asistencia por clase, alumno y fecha |
+| 4h | No se registra asistencia en una fecha futura |
+| 4i | `abril_trainer_assign_plan` cierra la membresía anterior y abre la nueva |
+| 4j | Si el alta falla, la membresía vigente sobrevive (la RPC es atómica) |
 | 5 | Ninguna tabla del esquema `public` sin RLS |
+| 6 | El alumno **no** lee `abril_trainer_students`: su ficha sale de `abril_trainer_my_student_record()`, que no devuelve `notes` |
+| 6c | Y sigue viendo sus pagos, su asistencia y sus clases por los helpers |
 
 ---
 
