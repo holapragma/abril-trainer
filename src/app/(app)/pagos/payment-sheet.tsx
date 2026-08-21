@@ -6,9 +6,24 @@ import { Field, Input, Select } from '@/components/ui/field'
 import { Sheet } from '@/components/ui/sheet'
 import { ErrorNote } from '@/components/ui/states'
 import { createPayment } from '@/lib/actions/payments'
-import { fullName } from '@/lib/format'
+import { fullName, formatMoney } from '@/lib/format'
+import { PAYMENT_METHODS } from '@/lib/constants'
 import { addMonths, todayISO } from '@/lib/today'
 import type { StudentListItem } from '@/types/domain'
+
+/**
+ * Lo que la membresía activa del alumno ya sabe: importe pactado, cuándo vence
+ * el próximo ciclo y a qué membresía imputarlo.
+ *
+ * Existe para el cobro suelto —una clase aparte, un ajuste—: el cobro del ciclo
+ * lo abre la propia membresía al asignar el plan y al cobrar el anterior.
+ */
+export type MembershipHint = {
+  membership_id: string
+  amount: number
+  due_date: string
+  plan_name: string | null
+}
 
 /** Vencimiento por defecto: dentro de un mes, que es el ciclo habitual. */
 function defaultDueDate(): string {
@@ -19,12 +34,14 @@ export function PaymentSheet({
   open,
   students,
   studentId,
+  membership,
   onClose,
   onSaved,
 }: {
   open: boolean
   students: StudentListItem[]
   studentId?: string
+  membership?: MembershipHint | null
   onClose: () => void
   onSaved: () => void
 }) {
@@ -60,7 +77,9 @@ export function PaymentSheet({
               student_id: studentId ?? fd.get('student_id'),
               amount: fd.get('amount'),
               due_date: fd.get('due_date'),
-              membership_id: null,
+              // Se imputa a la membresía activa cuando la hay: sin esto no se
+              // puede saber después cuántos ciclos lleva pagos un alumno.
+              membership_id: membership?.membership_id ?? null,
               method: fd.get('method'),
               note: fd.get('note'),
               paid,
@@ -74,6 +93,14 @@ export function PaymentSheet({
         }}
       >
         {error && <ErrorNote>{error}</ErrorNote>}
+
+        {membership && (
+          <p className="rounded-xl bg-surface-2 px-3.5 py-3 text-sm text-text-2">
+            Se imputa a <span className="font-medium text-text">{membership.plan_name ?? 'su plan'}</span>
+            {' · '}
+            {formatMoney(membership.amount)} por ciclo
+          </p>
+        )}
 
         {!studentId && (
           <Field label="Alumno" htmlFor="student_id" required error={fieldErrors.student_id}>
@@ -101,16 +128,29 @@ export function PaymentSheet({
               step={100}
               required
               placeholder="45000"
+              defaultValue={membership?.amount ?? ''}
               autoFocus
             />
           </Field>
           <Field label="Vence el" htmlFor="due_date" required error={fieldErrors.due_date}>
-            <Input id="due_date" name="due_date" type="date" defaultValue={defaultDueDate()} required />
+            <Input
+              id="due_date"
+              name="due_date"
+              type="date"
+              defaultValue={membership?.due_date ?? defaultDueDate()}
+              required
+            />
           </Field>
         </div>
 
         <Field label="Método" htmlFor="method">
-          <Input id="method" name="method" maxLength={40} placeholder="Efectivo, transferencia…" />
+          <Select id="method" name="method" defaultValue="Efectivo">
+            {PAYMENT_METHODS.map((m) => (
+              <option key={m} value={m}>
+                {m}
+              </option>
+            ))}
+          </Select>
         </Field>
 
         <Field label="Nota" htmlFor="note">

@@ -3,7 +3,9 @@ import type { DashboardSummary } from '@/types/domain'
 
 const EMPTY: DashboardSummary = {
   alumnos: { total: 0, activos: 0, nuevos: 0 },
-  pagos: { cobrado_mes: 0, pendientes: 0, vencidos: 0 },
+  pagos: { cobrado_mes: 0, pendientes: 0, vencidos: 0, adeudado: 0 },
+  cobros_pendientes: [],
+  cobros_por_generar: 0,
   clases_hoy: [],
   planificacion: { sin_rutina: 0, por_vencer: 0, sin_rutina_lista: [] },
 }
@@ -25,6 +27,8 @@ export async function getDashboard(): Promise<DashboardSummary> {
   return {
     alumnos: raw.alumnos ?? EMPTY.alumnos,
     pagos: raw.pagos ?? EMPTY.pagos,
+    cobros_pendientes: raw.cobros_pendientes ?? [],
+    cobros_por_generar: Number(raw.cobros_por_generar ?? 0),
     clases_hoy: raw.clases_hoy ?? [],
     planificacion: {
       ...EMPTY.planificacion,

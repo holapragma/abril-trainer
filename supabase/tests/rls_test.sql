@@ -277,6 +277,83 @@ begin
   end if;
 end $$;
 
+\echo '── 4k. El ciclo de cobro: asignar plan abre el primer cobro ──'
+do $$
+declare v_mem uuid; v_pagos int;
+begin
+  v_mem := abril_trainer_assign_plan(
+    'aaaaaaaa-0000-0000-0000-00000000000a',
+    'aaaaaaaa-0000-0000-0000-00000000000c',
+    30000, '2026-01-31');
+
+  select count(*) into v_pagos from abril_trainer_payments
+   where membership_id = v_mem and due_date = '2026-01-31' and paid_at is null;
+
+  if v_pagos = 1 then raise notice 'OK: asignar plan abrió el primer cobro';
+  else raise warning 'FALLO: el primer cobro no se abrió (% filas)', v_pagos;
+  end if;
+end $$;
+
+\echo '── 4l. Cobrar encadena el ciclo siguiente, y hacerlo dos veces no duplica ──'
+do $$
+declare v_pago uuid; v_next uuid; v_otra uuid; v_total int;
+begin
+  select id into v_pago from abril_trainer_payments
+   where student_id = 'aaaaaaaa-0000-0000-0000-00000000000a' and due_date = '2026-01-31';
+
+  v_next := abril_trainer_settle_payment(v_pago, true);
+
+  -- 31 de enero + un mes: el 28 de febrero, no el 3 de marzo.
+  if v_next is null then
+    raise warning 'FALLO: cobrar no encadenó el ciclo siguiente';
+  elsif (select due_date from abril_trainer_payments where id = v_next) <> '2026-02-28' then
+    raise warning 'FALLO: el ciclo siguiente cayó en % y no en 2026-02-28',
+      (select due_date from abril_trainer_payments where id = v_next);
+  else
+    raise notice 'OK: cobrar abrió el ciclo siguiente (2026-02-28)';
+  end if;
+
+  perform abril_trainer_settle_payment(v_pago, false);
+  v_otra := abril_trainer_settle_payment(v_pago, true);
+
+  select count(*) into v_total from abril_trainer_payments
+   where student_id = 'aaaaaaaa-0000-0000-0000-00000000000a';
+
+  if v_otra is null and v_total = 2 then
+    raise notice 'OK: desmarcar y volver a cobrar no duplicó';
+  else
+    raise warning 'FALLO: quedaron % cobros tras desmarcar y volver a cobrar', v_total;
+  end if;
+end $$;
+
+\echo '── 4m. Generar los cobros del mes es idempotente ──'
+do $$
+declare a int; b int;
+begin
+  a := abril_trainer_generate_monthly_charges('2026-06-15');
+  b := abril_trainer_generate_monthly_charges('2026-06-15');
+  if b = 0 then raise notice 'OK: la segunda corrida no creó nada (primera: %)', a;
+  else raise warning 'FALLO: la segunda corrida creó % cobros', b;
+  end if;
+end $$;
+
+\echo '── 4n. Un alumno en pausa no genera cobros ──'
+do $$
+declare v_creados int;
+begin
+  update abril_trainer_students set status = 'pausa'
+   where id = 'aaaaaaaa-0000-0000-0000-00000000000a';
+
+  v_creados := abril_trainer_generate_monthly_charges('2026-07-15');
+
+  if v_creados = 0 then raise notice 'OK: la generación salteó al alumno en pausa';
+  else raise warning 'FALLO: generó % cobro(s) para un alumno en pausa', v_creados;
+  end if;
+
+  update abril_trainer_students set status = 'activo'
+   where id = 'aaaaaaaa-0000-0000-0000-00000000000a';
+end $$;
+
 -- ─────────────────────────────────────────────────────────────────────────────
 -- 5. Cobertura: ninguna tabla sin RLS
 -- ─────────────────────────────────────────────────────────────────────────────

@@ -63,7 +63,18 @@ export type AttendanceRow = {
 /** Forma de lo que devuelve la RPC abril_trainer_dashboard_summary(). */
 export type DashboardSummary = {
   alumnos: { total: number; activos: number; nuevos: number }
-  pagos: { cobrado_mes: number; pendientes: number; vencidos: number }
+  pagos: { cobrado_mes: number; pendientes: number; vencidos: number; adeudado: number }
+  /** Los cinco cobros sin saldar más atrasados, para tocarlos desde el inicio. */
+  cobros_pendientes: {
+    id: string
+    amount: number
+    due_date: string
+    student_id: string
+    first_name: string
+    last_name: string
+  }[]
+  /** Cuántas membresías activas no tienen todavía el cobro de este mes. */
+  cobros_por_generar: number
   clases_hoy: {
     id: string
     nombre: string

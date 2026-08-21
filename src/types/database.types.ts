@@ -736,6 +736,7 @@ export type Database = {
       abril_trainer_app_today: { Args: never; Returns: string }
       abril_trainer_assign_plan: {
         Args: {
+          p_charge?: boolean
           p_plan_id: string
           p_price: number
           p_starts_on?: string
@@ -743,9 +744,17 @@ export type Database = {
         }
         Returns: string
       }
+      abril_trainer_cycle_due: {
+        Args: { p_month: string; p_starts_on: string }
+        Returns: string
+      }
       abril_trainer_dashboard_summary: { Args: never; Returns: Json }
       abril_trainer_duplicate_week: {
         Args: { p_block_id: string; p_from_week: number; p_to_week?: number }
+        Returns: number
+      }
+      abril_trainer_generate_monthly_charges: {
+        Args: { p_month?: string }
         Returns: number
       }
       abril_trainer_is_my_class: { Args: { cid: string }; Returns: boolean }
@@ -776,6 +785,11 @@ export type Database = {
       abril_trainer_owns_training_session: {
         Args: { tsid: string }
         Returns: boolean
+      }
+      abril_trainer_payment_totals: { Args: never; Returns: Json }
+      abril_trainer_settle_payment: {
+        Args: { p_paid: boolean; p_payment_id: string }
+        Returns: string
       }
       abril_trainer_unaccent: { Args: { t: string }; Returns: string }
     }

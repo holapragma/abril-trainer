@@ -11,6 +11,7 @@ import { getDashboard } from '@/lib/queries/dashboard'
 import { getProfile } from '@/lib/queries/profile'
 import { formatMoneyShort, formatTime, fullName, initials, pluralize } from '@/lib/format'
 import { todayHour } from '@/lib/today'
+import { CobrosPendientes } from './cobros-pendientes'
 
 export default function InicioPage() {
   return (
@@ -96,6 +97,11 @@ async function Dashboard() {
           </CardList>
         )}
       </section>
+
+      <CobrosPendientes
+        cobros={data.cobros_pendientes}
+        porGenerar={data.cobros_por_generar}
+      />
 
       {/* Alumnos */}
       <section>
