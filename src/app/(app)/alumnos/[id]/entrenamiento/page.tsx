@@ -1,10 +1,12 @@
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import { CalendarRange, ChevronRight } from 'lucide-react'
 import { PageBody } from '@/components/layout/page-header'
 import { StudentHeader } from '../student-header'
 import { Badge } from '@/components/ui/badge'
 import { EmptyState } from '@/components/ui/states'
-import { getBlocks } from '@/lib/queries/planning'
+import { getBlocks, getCopyableBlocks } from '@/lib/queries/planning'
+import { getActiveMembership } from '@/lib/queries/students'
 import type { TrainingBlock } from '@/types/domain'
 import { formatDate } from '@/lib/format'
 import { BLOCK_STATUS } from '@/lib/constants'
@@ -16,10 +18,24 @@ export default async function EntrenamientoPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const blocks = await getBlocks(id)
+  const [blocks, membership, copiables] = await Promise.all([
+    getBlocks(id),
+    getActiveMembership(id),
+    getCopyableBlocks(id),
+  ])
+
+  // Cuántas sesiones proponer para la semana 1: lo que el alumno contrató.
+  const sessionsPerWeek = membership?.plan?.sessions_per_week ?? 3
 
   const activos = blocks.filter((b) => b.status === 'activo')
   const cerrados = blocks.filter((b) => b.status !== 'activo')
+
+  // Con un único bloque activo y nada más, esta pantalla es una lista de un
+  // elemento: un toque de peaje entre la ficha y las semanas, que es donde
+  // Abril va. Se entra directo; la lista sigue disponible desde el bloque.
+  if (activos.length === 1 && cerrados.length === 0 && activos[0]) {
+    redirect(`/alumnos/${id}/entrenamiento/${activos[0].id}`)
+  }
 
   return (
     <>
@@ -32,7 +48,11 @@ export default async function EntrenamientoPage({
             title="Sin planificación"
             body="Un bloque agrupa las semanas de entrenamiento. Presencial suele ser de 1 o 2 semanas; virtual, de 4 o 6."
           />
-          <NewBlockButton studentId={id} />
+          <NewBlockButton
+            studentId={id}
+            sessionsPerWeek={sessionsPerWeek}
+            copiables={copiables}
+          />
         </>
       ) : (
         <>
@@ -40,7 +60,11 @@ export default async function EntrenamientoPage({
             {activos.map((b) => (
               <BlockCard key={b.id} studentId={id} block={b} />
             ))}
-            <NewBlockButton studentId={id} />
+            <NewBlockButton
+              studentId={id}
+              sessionsPerWeek={sessionsPerWeek}
+              copiables={copiables}
+            />
           </section>
 
           {cerrados.length > 0 && (

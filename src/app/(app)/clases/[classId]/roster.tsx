@@ -6,6 +6,7 @@ import { Plus, UserMinus, Users } from 'lucide-react'
 import { Button, IconButton } from '@/components/ui/button'
 import { Avatar } from '@/components/ui/avatar'
 import { Sheet } from '@/components/ui/sheet'
+import { FilterInput } from '@/components/ui/misc'
 import { EmptyState, ErrorNote } from '@/components/ui/states'
 import { enrollStudent, unenrollStudent } from '@/lib/actions/classes'
 import { fullName, initials } from '@/lib/format'
@@ -26,6 +27,7 @@ export function Roster({
 }) {
   const router = useRouter()
   const [adding, setAdding] = useState(false)
+  const [q, setQ] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
 
@@ -79,13 +81,21 @@ export function Roster({
         title="Inscribir alumno"
         description={`Quedan ${capacity - roster.length} lugares`}
       >
+        {candidates.length > 6 && (
+          <div className="mb-3">
+            <FilterInput value={q} onChange={setQ} placeholder="Buscar alumno…" />
+          </div>
+        )}
+
         {candidates.length === 0 ? (
           <p className="py-8 text-center text-sm text-text-2">
             Todos los alumnos activos ya están en esta clase.
           </p>
         ) : (
           <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border">
-            {candidates.map((s) => (
+            {candidates
+              .filter((s) => fullName(s).toLowerCase().includes(q.trim().toLowerCase()))
+              .map((s) => (
               <li key={s.id}>
                 <button
                   type="button"

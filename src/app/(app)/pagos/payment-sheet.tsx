@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { Button } from '@/components/ui/button'
 import { Field, Input, Select } from '@/components/ui/field'
+import { FilterInput } from '@/components/ui/misc'
 import { Sheet } from '@/components/ui/sheet'
 import { ErrorNote } from '@/components/ui/states'
 import { createPayment } from '@/lib/actions/payments'
@@ -46,6 +47,7 @@ export function PaymentSheet({
   onSaved: () => void
 }) {
   const [paid, setPaid] = useState(false)
+  const [q, setQ] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [pending, startTransition] = useTransition()
@@ -104,16 +106,25 @@ export function PaymentSheet({
 
         {!studentId && (
           <Field label="Alumno" htmlFor="student_id" required error={fieldErrors.student_id}>
-            <Select id="student_id" name="student_id" required defaultValue="">
-              <option value="" disabled>
-                Elegí un alumno
-              </option>
-              {students.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {fullName(s)}
+            <div className="space-y-2">
+              {/* Con pocos alumnos el desplegable alcanza; pasada la treintena,
+                  buscar es más rápido que recorrer la lista con el pulgar. */}
+              {students.length > 8 && (
+                <FilterInput value={q} onChange={setQ} placeholder="Buscar alumno…" />
+              )}
+              <Select id="student_id" name="student_id" required defaultValue="">
+                <option value="" disabled>
+                  Elegí un alumno
                 </option>
-              ))}
-            </Select>
+                {students
+                  .filter((s) => fullName(s).toLowerCase().includes(q.trim().toLowerCase()))
+                  .map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {fullName(s)}
+                    </option>
+                  ))}
+              </Select>
+            </div>
           </Field>
         )}
 

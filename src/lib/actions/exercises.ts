@@ -3,8 +3,46 @@
 import { revalidatePath } from 'next/cache'
 import { createClient, currentUserId } from '@/lib/supabase/server'
 import { exerciseSchema, fieldErrorsOf } from '@/lib/schemas'
+import { getExercises, getFavoriteIds } from '@/lib/queries/exercises'
+import type { PickerExercise } from '@/types/domain'
 import { STORAGE } from '@/lib/constants'
 import { fail, ok, type ActionResult } from '@/types/domain'
+
+/**
+ * Búsqueda de la biblioteca para el selector de ejercicios.
+ *
+ * Es la única LECTURA que va por Server Action, y tiene motivo: el picker vive
+ * dentro de un sheet y consulta mientras Abril escribe. Antes lo resolvía el
+ * cliente de Supabase en el navegador, lo que metía supabase-js en el bundle de
+ * la pantalla más usada al planificar. Con la acción, el JavaScript se queda en
+ * el servidor y la ruta pesa la mitad.
+ */
+export async function searchExercises(input: {
+  q?: string
+  group?: string
+}): Promise<ActionResult<{ items: PickerExercise[]; favorites: string[] }>> {
+  try {
+    const [{ items }, favorites] = await Promise.all([
+      getExercises({ q: input.q, group: input.group }),
+      getFavoriteIds(),
+    ])
+
+    return ok({
+      items: items.map((e) => ({
+        id: e.id,
+        name: e.name,
+        primary_muscle: e.primary_muscle,
+        equipment: e.equipment,
+        media_url: e.media_url,
+        owner_id: e.owner_id,
+      })),
+      favorites: [...favorites],
+    })
+  } catch (error) {
+    console.error('searchExercises:', error instanceof Error ? error.message : error)
+    return fail('No se pudo cargar la biblioteca')
+  }
+}
 
 export async function toggleFavorite(exerciseId: string): Promise<ActionResult<{ fav: boolean }>> {
   const userId = await currentUserId()

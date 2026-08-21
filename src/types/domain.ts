@@ -42,6 +42,12 @@ export type MembershipWithPlan = Tables<'abril_trainer_memberships'> & {
   plan: Pick<Plan, 'id' | 'name' | 'modality' | 'sessions_per_week'> | null
 }
 
+/** Lo mínimo que el selector de ejercicios necesita mostrar. */
+export type PickerExercise = Pick<
+  Exercise,
+  'id' | 'name' | 'primary_muscle' | 'equipment' | 'media_url' | 'owner_id'
+>
+
 export type SessionExerciseWithExercise = SessionExercise & {
   exercise: Pick<Exercise, 'id' | 'name' | 'primary_muscle' | 'media_url' | 'equipment'> | null
 }

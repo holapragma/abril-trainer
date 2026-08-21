@@ -354,6 +354,27 @@ begin
    where id = 'aaaaaaaa-0000-0000-0000-00000000000a';
 end $$;
 
+\echo '── 4o. Copiar un bloque a otro alumno lleva sesiones y prescripciones ──'
+do $$
+declare v_new uuid; v_ses int; v_ejer int;
+begin
+  v_new := abril_trainer_copy_block(
+    'aaaaaaaa-0000-0000-0000-000000000003',
+    'aaaaaaaa-0000-0000-0000-00000000000b',
+    'Copiado');
+
+  select count(distinct ts.id), count(se.id) into v_ses, v_ejer
+    from abril_trainer_training_sessions ts
+    left join abril_trainer_session_exercises se on se.session_id = ts.id
+   where ts.block_id = v_new;
+
+  if v_ses > 0 and v_ejer > 0 then
+    raise notice 'OK: copió % sesiones con % ejercicios', v_ses, v_ejer;
+  else
+    raise warning 'FALLO: la copia quedó vacía (% sesiones, % ejercicios)', v_ses, v_ejer;
+  end if;
+end $$;
+
 -- ─────────────────────────────────────────────────────────────────────────────
 -- 5. Cobertura: ninguna tabla sin RLS
 -- ─────────────────────────────────────────────────────────────────────────────

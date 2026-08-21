@@ -744,6 +744,15 @@ export type Database = {
         }
         Returns: string
       }
+      abril_trainer_copy_block: {
+        Args: {
+          p_block_id: string
+          p_name?: string
+          p_starts_on?: string
+          p_student_id: string
+        }
+        Returns: string
+      }
       abril_trainer_cycle_due: {
         Args: { p_month: string; p_starts_on: string }
         Returns: string

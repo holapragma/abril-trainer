@@ -93,3 +93,36 @@ export function Chip({
     </button>
   )
 }
+
+/**
+ * Filtro en memoria para listas que ya vienen cargadas (inscribir en una clase,
+ * elegir alumno para un cobro). No consulta: recorta lo que ya está en pantalla,
+ * que con treinta alumnos es la diferencia entre encontrar y hacer scroll.
+ */
+export function FilterInput({
+  value,
+  onChange,
+  placeholder = 'Buscar…',
+  label,
+}: {
+  value: string
+  onChange: (v: string) => void
+  placeholder?: string
+  label?: string
+}) {
+  return (
+    <div className="relative">
+      <Search
+        size={17}
+        className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-text-3"
+      />
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        aria-label={label ?? placeholder}
+        className="h-12 w-full rounded-xl border border-border bg-surface pr-3 pl-11 text-text placeholder:text-text-3 outline-none focus:border-accent focus:ring-2 focus:ring-accent-soft"
+      />
+    </div>
+  )
+}
