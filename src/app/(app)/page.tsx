@@ -42,10 +42,12 @@ async function Greeting() {
           <p className="text-sm text-text-2">{saludo}</p>
           <h1 className="font-display truncate text-2xl font-bold">{nombre}</h1>
         </div>
+        {/* En escritorio Ajustes vive en el sidebar: acá sería un segundo
+            camino a lo mismo. */}
         <Link
           href="/ajustes"
           aria-label="Ajustes"
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-text-2 hover:bg-surface-2 hover:text-text"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-text-2 hover:bg-surface-2 hover:text-text lg:hidden"
         >
           <Settings size={20} />
         </Link>
