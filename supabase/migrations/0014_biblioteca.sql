@@ -59,7 +59,10 @@ create index abril_trainer_exercises_name_norm_idx
 do $$
 declare n int;
 begin
-  select count(*) into n from abril_trainer_training_blocks where status = 'borrador';
+  -- Comparado como texto: una vez que el valor sale del enum, `status =
+  -- 'borrador'` deja de ser una comparación válida y esta guarda ya no podría
+  -- ni ejecutarse sobre una base actualizada.
+  select count(*) into n from abril_trainer_training_blocks where status::text = 'borrador';
   if n > 0 then
     raise exception 'Hay % bloque(s) en estado borrador: la migración no puede continuar sin decidir qué hacer con ellos', n;
   end if;

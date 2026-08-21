@@ -1352,7 +1352,9 @@ begin
 end;
 $$;
 
-comment on function abril_trainer_assign_plan is
+-- Con la firma explícita: 0015 agrega una sobrecarga y sin esto el comment
+-- queda ambiguo si las migraciones se reaplican sobre una base ya actualizada.
+comment on function abril_trainer_assign_plan(uuid, uuid, numeric, date) is
   'Finaliza la membresía activa y crea la nueva en una sola transacción. Devuelve el id de la membresía creada. security invoker: la RLS decide sobre qué alumno se puede.';
 
 -- ends_on nunca puede ser anterior a starts_on (lo exige memberships_dates_ck):
@@ -1552,7 +1554,10 @@ create index abril_trainer_exercises_name_norm_idx
 do $$
 declare n int;
 begin
-  select count(*) into n from abril_trainer_training_blocks where status = 'borrador';
+  -- Comparado como texto: una vez que el valor sale del enum, `status =
+  -- 'borrador'` deja de ser una comparación válida y esta guarda ya no podría
+  -- ni ejecutarse sobre una base actualizada.
+  select count(*) into n from abril_trainer_training_blocks where status::text = 'borrador';
   if n > 0 then
     raise exception 'Hay % bloque(s) en estado borrador: la migración no puede continuar sin decidir qué hacer con ellos', n;
   end if;

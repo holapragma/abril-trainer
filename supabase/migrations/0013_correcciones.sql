@@ -158,7 +158,9 @@ begin
 end;
 $$;
 
-comment on function abril_trainer_assign_plan is
+-- Con la firma explícita: 0015 agrega una sobrecarga y sin esto el comment
+-- queda ambiguo si las migraciones se reaplican sobre una base ya actualizada.
+comment on function abril_trainer_assign_plan(uuid, uuid, numeric, date) is
   'Finaliza la membresía activa y crea la nueva en una sola transacción. Devuelve el id de la membresía creada. security invoker: la RLS decide sobre qué alumno se puede.';
 
 -- ends_on nunca puede ser anterior a starts_on (lo exige memberships_dates_ck):
