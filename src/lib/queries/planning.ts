@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import type { SessionWithExercises, TrainingBlock, TrainingSession } from '@/types/domain'
 
@@ -13,7 +14,7 @@ export async function getBlocks(studentId: string): Promise<TrainingBlock[]> {
   return data ?? []
 }
 
-export async function getBlock(blockId: string): Promise<TrainingBlock | null> {
+export const getBlock = cache(async (blockId: string): Promise<TrainingBlock | null> => {
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('abril_trainer_training_blocks')
@@ -23,7 +24,7 @@ export async function getBlock(blockId: string): Promise<TrainingBlock | null> {
 
   if (error) throw error
   return data
-}
+})
 
 /**
  * Todas las sesiones de un bloque, con cuántos ejercicios tiene cada una.

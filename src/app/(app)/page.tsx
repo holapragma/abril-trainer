@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { StatTile } from '@/components/ui/stat'
 import { Avatar } from '@/components/ui/avatar'
 import { Skeleton } from '@/components/ui/states'
-import { getDashboard, getStudentsWithoutPlan } from '@/lib/queries/dashboard'
+import { getDashboard } from '@/lib/queries/dashboard'
 import { getProfile } from '@/lib/queries/profile'
 import { formatMoneyShort, formatTime, fullName, initials, pluralize } from '@/lib/format'
 import { todayHour } from '@/lib/today'
@@ -54,7 +54,8 @@ async function Greeting() {
 }
 
 async function Dashboard() {
-  const [data, sinPlan] = await Promise.all([getDashboard(), getStudentsWithoutPlan()])
+  const data = await getDashboard()
+  const sinPlan = data.planificacion.sin_rutina_lista
 
   return (
     <>

@@ -72,5 +72,10 @@ export type DashboardSummary = {
     inscritos: number
     asistencia_tomada: boolean
   }[]
-  planificacion: { sin_rutina: number; por_vencer: number }
+  planificacion: {
+    sin_rutina: number
+    por_vencer: number
+    /** Los primeros cinco, para poder tocarlos desde el inicio y no solo contarlos. */
+    sin_rutina_lista: Pick<Student, 'id' | 'first_name' | 'last_name' | 'photo_url'>[]
+  }
 }

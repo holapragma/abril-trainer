@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { withStatus } from '@/lib/payment-status'
 import { addDays, todayISO } from '@/lib/today'
@@ -39,12 +40,17 @@ export async function getStudents(filters?: {
   return data ?? []
 }
 
-export async function getStudent(id: string): Promise<Student | null> {
+/**
+ * cache() de React: la ficha del alumno renderiza StudentHeader y la página en
+ * el mismo pase, y las dos necesitan el alumno. Sin esto son dos consultas
+ * idénticas por carga, en las cuatro pestañas.
+ */
+export const getStudent = cache(async (id: string): Promise<Student | null> => {
   const supabase = await createClient()
   const { data, error } = await supabase.from('abril_trainer_students').select('*').eq('id', id).maybeSingle()
   if (error) throw error
   return data
-}
+})
 
 export async function getActiveMembership(studentId: string): Promise<MembershipWithPlan | null> {
   const supabase = await createClient()

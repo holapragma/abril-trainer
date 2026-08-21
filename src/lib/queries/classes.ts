@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { addDays, todayISO, weekdayOf } from '@/lib/today'
 import type { AttendanceRow, ClassWithCount, Klass } from '@/types/domain'
@@ -18,12 +19,12 @@ export async function getClasses(): Promise<ClassWithCount[]> {
   })
 }
 
-export async function getClass(id: string): Promise<Klass | null> {
+export const getClass = cache(async (id: string): Promise<Klass | null> => {
   const supabase = await createClient()
   const { data, error } = await supabase.from('abril_trainer_classes').select('*').eq('id', id).maybeSingle()
   if (error) throw error
   return data
-}
+})
 
 /** Alumnos inscritos en una clase, con su asistencia en la fecha dada. */
 export async function getClassRoster(classId: string, date: string): Promise<AttendanceRow[]> {
