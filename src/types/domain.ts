@@ -64,6 +64,20 @@ export type AttendanceRow = {
   last_name: string
   photo_url: string | null
   status: Attendance['status'] | null
+  /** Estado del alumno: quien está en pausa o de baja se marca igual, pero se ve. */
+  student_status: Student['status']
+}
+
+export type ClassException = Tables<'abril_trainer_class_exceptions'>
+
+/** La ocurrencia concreta de una clase recurrente en una fecha. */
+export type Occurrence = {
+  /** La fecha de la ocurrencia original, la que sale del weekday. */
+  date: string
+  /** Adónde se movió, si se movió. */
+  effectiveDate: string
+  startTime: string | null
+  exception: ClassException | null
 }
 
 /** Forma de lo que devuelve la RPC abril_trainer_dashboard_summary(). */
@@ -86,6 +100,8 @@ export type DashboardSummary = {
     nombre: string
     hora: string
     cupo: number
+    fecha: string
+    movida: boolean
     inscritos: number
     asistencia_tomada: boolean
   }[]

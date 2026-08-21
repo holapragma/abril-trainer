@@ -4,7 +4,7 @@ Esquema, políticas RLS y funciones de Supabase. **14 tablas, 34 políticas.**
 
 Validado contra un stack de Supabase real (`supabase start`): las doce migraciones
 aplican limpias en orden, el consolidado aplica de una sola pasada, la app recorre
-sus 18 pantallas sin un error, y `tests/rls_test.sql` pasa con 14 aserciones.
+sus pantallas sin un error, y `tests/rls_test.sql` pasa con 22 aserciones.
 
 ```
 supabase/
@@ -22,8 +22,12 @@ supabase/
 │   ├── 0010_storage.sql        buckets y sus políticas
 │   ├── 0011_grants.sql         privilegios de tabla — SIN ESTO NADA FUNCIONA
 │   ├── 0012_timezone.sql       abril_trainer_app_today(): «hoy» en la zona de la entrenadora
-│   └── 0013_correcciones.sql   defaults con app_today(), assign_plan atómico,
-│                               notes fuera del alcance del alumno, asistencia sin futuro
+│   ├── 0013_correcciones.sql   defaults con app_today(), assign_plan atómico,
+│   │                           notes fuera del alcance del alumno, asistencia sin futuro
+│   ├── 0014_biblioteca.sql     búsqueda sin acentos (name_norm), fuera «borrador»
+│   ├── 0015_cobros.sql         el ciclo de cobro sale de la membresía
+│   ├── 0016_planificacion.sql  copy_block: copiar una rutina a otro alumno
+│   └── 0017_clases_excepciones.sql  suspender o mover una clase puntual
 └── tests/
     └── rls_test.sql        aislamiento entre entrenadoras + reglas de negocio
 ```
@@ -155,6 +159,9 @@ Qué cubre:
 | 4e | No se borra un ejercicio que está en una planificación |
 | 4f | Nadie puede borrar el catálogo global |
 | 4g | Una sola marca de asistencia por clase, alumno y fecha |
+| 4k–4n | El ciclo de cobro: el plan abre el primero, cobrar encadena el siguiente, la generación mensual es idempotente y un alumno en pausa no genera |
+| 4o | `abril_trainer_copy_block` copia sesiones, ejercicios y prescripciones |
+| 4p–4q | Una clase suspendida sale del inicio; una movida sin destino se rechaza |
 | 4h | No se registra asistencia en una fecha futura |
 | 4i | `abril_trainer_assign_plan` cierra la membresía anterior y abre la nueva |
 | 4j | Si el alta falla, la membresía vigente sobrevive (la RPC es atómica) |
@@ -203,8 +210,14 @@ consulta más frecuente, y convierte «duplicar semana» en una sola operación.
 **No existe `class_sessions`.** Las clases son recurrentes y fijas. Materializar
 cada ocurrencia obligaría a un job que genere filas futuras, para grupos de 4-6
 personas. Las fechas concretas viven en `abril_trainer_attendance.date`.
-*Pendiente conocido:* cancelar o mover una clase puntual necesitará una tabla
-`class_exceptions(class_id, date, reason)` el día que haga falta.
+
+Lo que sí existe, desde 0017, es `abril_trainer_class_exceptions`: **solo lo que
+se sale de la norma**. Un feriado o un cambio de día son una fila; el resto del
+año no ocupa nada. Antes, suspender una clase se «resolvía» marcando a todos
+justificado, o sea falsear la asistencia para representar algo que no pasó.
+La ocurrencia se identifica por su fecha original (`date`) y `new_date` dice
+adónde se movió, así que pasar lista ocurre en el día en que la clase realmente
+se dio.
 
 **GRANT y RLS son cosas distintas, y hacen falta las dos.** `GRANT` decide a qué
 tablas llega un rol; RLS decide qué filas ve dentro. Las tablas creadas por

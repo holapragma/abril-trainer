@@ -75,6 +75,7 @@ union all select 'abril_trainer_workout_logs',      count(*) from abril_trainer_
 union all select 'abril_trainer_classes',           count(*) from abril_trainer_classes
 union all select 'abril_trainer_class_enrollments', count(*) from abril_trainer_class_enrollments
 union all select 'abril_trainer_attendance',        count(*) from abril_trainer_attendance
+union all select 'abril_trainer_class_exceptions',  count(*) from abril_trainer_class_exceptions
 order by 1;
 
 \echo '── 1b. Pero sí ve el catálogo global (debe ser > 0) ──'
@@ -373,6 +374,33 @@ begin
   else
     raise warning 'FALLO: la copia quedó vacía (% sesiones, % ejercicios)', v_ses, v_ejer;
   end if;
+end $$;
+
+\echo '── 4p. Suspender una clase la saca del inicio ──'
+do $$
+declare antes int; despues int;
+begin
+  select jsonb_array_length(abril_trainer_dashboard_summary()->'clases_hoy') into antes;
+
+  insert into abril_trainer_class_exceptions (class_id, date, kind, reason)
+  values ('aaaaaaaa-0000-0000-0000-000000000006', abril_trainer_app_today(), 'cancelada', 'Feriado');
+
+  select jsonb_array_length(abril_trainer_dashboard_summary()->'clases_hoy') into despues;
+
+  if antes = 1 and despues = 0 then
+    raise notice 'OK: la clase suspendida desapareció del inicio';
+  else
+    raise warning 'FALLO: clases_hoy pasó de % a % (esperado 1 -> 0)', antes, despues;
+  end if;
+end $$;
+
+\echo '── 4q. Una clase movida sin fecha destino se rechaza ──'
+do $$ begin
+  insert into abril_trainer_class_exceptions (class_id, date, kind)
+  values ('aaaaaaaa-0000-0000-0000-000000000006', abril_trainer_app_today() + 7, 'movida');
+  raise warning 'FALLO: aceptó una clase movida sin decir adónde';
+exception when check_violation then
+  raise notice 'OK: rechazado -> movida exige new_date';
 end $$;
 
 -- ─────────────────────────────────────────────────────────────────────────────

@@ -5,11 +5,13 @@ import { useRouter } from 'next/navigation'
 import { Plus, UserMinus, Users } from 'lucide-react'
 import { Button, IconButton } from '@/components/ui/button'
 import { Avatar } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
 import { Sheet } from '@/components/ui/sheet'
 import { FilterInput } from '@/components/ui/misc'
 import { EmptyState, ErrorNote } from '@/components/ui/states'
 import { enrollStudent, unenrollStudent } from '@/lib/actions/classes'
 import { fullName, initials } from '@/lib/format'
+import { STUDENT_STATUS } from '@/lib/constants'
 import type { AttendanceRow, StudentListItem } from '@/types/domain'
 
 type RosterRow = AttendanceRow & { avatarUrl: string | null }
@@ -50,7 +52,14 @@ export function Roster({
           {roster.map((r) => (
             <li key={r.student_id} className="flex items-center gap-3 p-3">
               <Avatar src={r.avatarUrl} initials={initials(r)} size="sm" />
-              <span className="min-w-0 flex-1 truncate font-medium">{fullName(r)}</span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate font-medium">{fullName(r)}</span>
+                {r.student_status !== 'activo' && (
+                  <Badge tone={r.student_status === 'baja' ? 'danger' : 'warn'}>
+                    {STUDENT_STATUS[r.student_status]}
+                  </Badge>
+                )}
+              </span>
               <IconButton
                 label={`Quitar a ${r.first_name}`}
                 className="hover:text-danger"

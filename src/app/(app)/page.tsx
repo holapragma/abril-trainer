@@ -72,14 +72,17 @@ async function Dashboard() {
             {data.clases_hoy.map((c) => (
               <Link
                 key={c.id}
-                href={`/clases/${c.id}/asistencia`}
+                href={`/clases/${c.id}/asistencia${c.fecha ? `?fecha=${c.fecha}` : ''}`}
                 className="flex items-center gap-3 p-4 transition-colors hover:bg-surface-2"
               >
                 <span className="tabular font-display w-14 shrink-0 text-lg font-bold">
                   {formatTime(c.hora)}
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium">{c.nombre}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="truncate font-medium">{c.nombre}</p>
+                    {c.movida && <Badge tone="warn">Movida</Badge>}
+                  </div>
                   <p className="tabular text-sm text-text-2">
                     {c.inscritos}/{c.cupo} alumnos
                   </p>

@@ -112,6 +112,46 @@ export type Database = {
           },
         ]
       }
+      abril_trainer_class_exceptions: {
+        Row: {
+          class_id: string
+          created_at: string
+          date: string
+          id: string
+          kind: Database["public"]["Enums"]["abril_trainer_class_exception_kind"]
+          new_date: string | null
+          new_start_time: string | null
+          reason: string | null
+        }
+        Insert: {
+          class_id: string
+          created_at?: string
+          date: string
+          id?: string
+          kind: Database["public"]["Enums"]["abril_trainer_class_exception_kind"]
+          new_date?: string | null
+          new_start_time?: string | null
+          reason?: string | null
+        }
+        Update: {
+          class_id?: string
+          created_at?: string
+          date?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["abril_trainer_class_exception_kind"]
+          new_date?: string | null
+          new_start_time?: string | null
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "abril_trainer_class_exceptions_class_id_fkey"
+            columns: ["class_id"]
+            referencedRelation: "abril_trainer_classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       abril_trainer_classes: {
         Row: {
           active: boolean
@@ -805,6 +845,7 @@ export type Database = {
     Enums: {
       abril_trainer_attendance_status: "presente" | "ausente" | "justificado"
       abril_trainer_block_status: "activo" | "terminado"
+      abril_trainer_class_exception_kind: "cancelada" | "movida"
       abril_trainer_membership_status: "activa" | "pausada" | "finalizada"
       abril_trainer_modality: "presencial" | "virtual"
       abril_trainer_student_status: "activo" | "pausa" | "baja"
