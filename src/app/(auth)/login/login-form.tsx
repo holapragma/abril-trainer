@@ -7,6 +7,19 @@ import { Field, Input } from '@/components/ui/field'
 import { ErrorNote } from '@/components/ui/states'
 import { login } from '@/lib/actions/auth'
 
+/**
+ * Solo rutas internas. Sin esto, /login?next=https://otro-sitio funciona como
+ * redirección abierta: alguien manda ese enlace, Abril entra con su contraseña
+ * y termina en una página que no es la suya.
+ *
+ * Se rechaza también //host y /\host, que el navegador resuelve como absolutas.
+ */
+function safeNext(value: string | null): string {
+  if (!value || !value.startsWith('/')) return '/'
+  if (value.startsWith('//') || value.startsWith('/\\')) return '/'
+  return value
+}
+
 export function LoginForm() {
   const router = useRouter()
   const params = useSearchParams()
@@ -14,7 +27,7 @@ export function LoginForm() {
 
   useEffect(() => {
     if (state?.ok) {
-      router.replace(params.get('next') || '/')
+      router.replace(safeNext(params.get('next')))
       router.refresh()
     }
   }, [state, router, params])

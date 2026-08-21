@@ -21,7 +21,8 @@ Estos principios están implementados en el código, no son aspiracionales — r
 2. **RLS es la barrera de seguridad real, no el código de la app.** Nunca escribas `.eq('trainer_id', …)` en una query. Si sentís que hace falta, es señal de que falta una política RLS, no de que el filtro va en TypeScript.
 3. **Las lecturas lanzan, las escrituras devuelven un resultado.** Ver `types/domain.ts` (`ActionResult`, `ok()`, `fail()`). Un error al guardar un formulario tiene que aparecer junto al botón, no reemplazar la pantalla.
 4. **Los mensajes de error son para la usuaria, no para el log.** "No se pudo crear el alumno", nunca el mensaje crudo de Postgres/Supabase. El detalle técnico va a `console.error`.
-5. **"Hoy" se calcula en la zona horaria de Abril (`America/Argentina/Buenos_Aires`), nunca en la del servidor.** Cliente: `src/lib/today.ts`. SQL: `abril_trainer_app_today()` (migración 0012). Las dos caras tienen que coincidir siempre que agregues lógica de fechas.
+5. **"Hoy" se calcula en la zona horaria de Abril (`America/Argentina/Buenos_Aires`), nunca en la del servidor.** Cliente: `src/lib/today.ts` (`todayISO`, `todayWeekday`, `todayHour`, `startOfMonthISO`, `appDateOf`, `daysBetween`). SQL: `abril_trainer_app_today()` y `abril_trainer_app_date()` (migraciones 0012 y 0013). Las dos caras tienen que coincidir siempre que agregues lógica de fechas.
+   **Regla operativa:** en `lib/queries`, `lib/actions` y `app/` no se llama `new Date()` para obtener una fecha de calendario — ni para "hoy", ni para vencimientos por defecto, ni para cortes de mes. Los únicos `new Date()` legítimos son los instantes (`paid_at`) y los internos de `today.ts`/`format.ts`, que fijan `T12:00:00` justamente para que la zona no corra el día.
 6. **Cuatro pestañas en la nav inferior, no cinco.** "Entrenamientos" no es un ítem de nivel superior a propósito: una planificación siempre pertenece a un alumno y se entra por su ficha.
 7. **`database.types.ts` es generado — nunca se edita a mano.** Se regenera con `npm run db:types` después de cada migración.
 
@@ -181,7 +182,8 @@ Detectadas en el código real, no genéricas:
 - **Vistas con `security_invoker = true` es obligatorio**, no opcional (ver `abril_trainer_payments_with_status` en `0003_commercial.sql`) — por defecto una vista corre con permisos de quien la creó, lo que saltearía RLS.
 - **No agregar columnas de estado calculable.** El estado de pago (`pagado`/`pendiente`/`vencido`) se deriva de `paid_at`/`due_date`, tanto en SQL (vista `abril_trainer_payments_with_status`) como en TS (`lib/payment-status.ts`) — las dos implementaciones tienen que coincidir si cambia la regla.
 - **`abril_trainer_session_exercises.reps` y `.load` son `text`, no números** — es una prescripción libre ("8-10", "AMRAP", "al 70%"), no un dato numérico.
-- **Reglas de negocio en la base, no solo en el formulario**: el cupo de clase se hace cumplir con un trigger (`abril_trainer_check_class_capacity`, `0006_classes.sql`), no confíes en que el cliente ya validó.
+- **Reglas de negocio en la base, no solo en el formulario**: el cupo de clase se hace cumplir con un trigger (`abril_trainer_check_class_capacity`, `0006_classes.sql`) y la asistencia no puede registrarse en el futuro (`abril_trainer_check_attendance_date`, `0013`), no confíes en que el cliente ya validó.
+- **Operación compuesta = una RPC, no dos escrituras seguidas.** Asignar un plan cierra la membresía anterior y abre la nueva: va por `abril_trainer_assign_plan` (`0013`, `security invoker`) para que las dos pasen juntas o no pase ninguna. Mismo criterio que `abril_trainer_duplicate_week`.
 
 **REGLA IMPORTANTE — no negociable:** No modificar la estructura de producción ni borrar datos directamente. Cualquier cambio de esquema va por una migración nueva, probada en local primero. Antes de un cambio destructivo (`drop`, `delete` sin filtro, `truncate`, alterar una columna con datos), explicar las consecuencias y pedir confirmación explícita antes de ejecutar.
 
@@ -209,7 +211,7 @@ Estas reglas, detectadas en código y comentarios, tienen prioridad sobre cualqu
 - **"Hoy" siempre en zona horaria Argentina** (`America/Argentina/Buenos_Aires`), nunca UTC del servidor — ver Core Principles.
 - **El cupo de una clase se hace cumplir en la base** (trigger), no solo en el formulario.
 - **`abril_trainer_exercises.id` es `text`, no `uuid`** — son los ids estables del catálogo de GymMane (ej. `EIeI8Vf`), coinciden con el nombre del archivo de media.
-- **`abril_trainer_students.notes` es privado de la entrenadora**: nunca debe exponerse a un futuro acceso de alumno; si se construye esa vista, tiene que excluir esta columna explícitamente.
+- **`abril_trainer_students.notes` es privado de la entrenadora**: el alumno **no** tiene política de `SELECT` sobre `abril_trainer_students`. Su ficha sale de `abril_trainer_my_student_record()` (`0013`, `security definer`), que no devuelve `notes`. Si algún día se amplía lo que el alumno ve, se amplía esa función — no se agrega una política sobre la tabla.
 
 # Feature Development Rules
 

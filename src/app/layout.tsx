@@ -17,7 +17,9 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
+  // Sin maximumScale: bloquear el zoom es una barrera de accesibilidad y ya no
+  // hace falta. El zoom automático de iOS al enfocar un campo lo evitan los
+  // 16px de font-size en los inputs (globals.css), no un viewport cerrado.
   viewportFit: 'cover',
   themeColor: [
     { media: '(prefers-color-scheme: light)', color: '#fafaf7' },
