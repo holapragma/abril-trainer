@@ -197,6 +197,7 @@ export type Database = {
           id: string
           media_url: string | null
           name: string
+          name_norm: string | null
           owner_id: string | null
           primary_muscle: string
           secondary_muscles: string[]
@@ -209,6 +210,7 @@ export type Database = {
           id: string
           media_url?: string | null
           name: string
+          name_norm?: string | null
           owner_id?: string | null
           primary_muscle: string
           secondary_muscles?: string[]
@@ -221,6 +223,7 @@ export type Database = {
           id?: string
           media_url?: string | null
           name?: string
+          name_norm?: string | null
           owner_id?: string | null
           primary_muscle?: string
           secondary_muscles?: string[]
@@ -774,10 +777,11 @@ export type Database = {
         Args: { tsid: string }
         Returns: boolean
       }
+      abril_trainer_unaccent: { Args: { t: string }; Returns: string }
     }
     Enums: {
       abril_trainer_attendance_status: "presente" | "ausente" | "justificado"
-      abril_trainer_block_status: "borrador" | "activo" | "terminado"
+      abril_trainer_block_status: "activo" | "terminado"
       abril_trainer_membership_status: "activa" | "pausada" | "finalizada"
       abril_trainer_modality: "presencial" | "virtual"
       abril_trainer_student_status: "activo" | "pausa" | "baja"
