@@ -62,9 +62,14 @@ export function Sheet({
       }}
       className={cn(
         'w-full max-w-lg rounded-t-modal bg-surface p-0 text-text sm:rounded-modal',
-        'mt-auto mb-0 sm:my-auto',
+        // El centrado se declara a mano en los DOS ejes. El navegador centra un
+        // <dialog> modal con margin:auto, pero el reset de Tailwind pone
+        // margin:0 en todo y se lo lleva puesto: sin mx-auto el panel queda
+        // clavado a la izquierda de la pantalla. En un teléfono no se ve,
+        // porque w-full ocupa el ancho entero.
+        'mx-auto mt-auto mb-0 sm:my-auto',
         'backdrop:bg-black/40 backdrop:backdrop-blur-[2px]',
-        'open:animate-in max-h-[90dvh] overflow-hidden',
+        'sheet-in max-h-[90dvh] overflow-hidden',
         className,
       )}
     >
