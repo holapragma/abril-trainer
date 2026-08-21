@@ -74,7 +74,6 @@ export const ATTENDANCE_STATUS: Record<Enums<'abril_trainer_attendance_status'>,
 }
 
 export const BLOCK_STATUS: Record<Enums<'abril_trainer_block_status'>, string> = {
-  borrador: 'Borrador',
   activo: 'Activo',
   terminado: 'Terminado',
 }

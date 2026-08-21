@@ -6,12 +6,21 @@ import { Plus, X } from 'lucide-react'
 import { Button, IconButton } from '@/components/ui/button'
 import { Field, Input, Select } from '@/components/ui/field'
 import { ErrorNote } from '@/components/ui/states'
-import { createExercise } from '@/lib/actions/exercises'
+import { createExercise, updateExercise } from '@/lib/actions/exercises'
 import { DIFFICULTIES, EQUIPMENT, MUSCLES, MUSCLE_IDS } from '@/lib/constants'
+import type { Exercise } from '@/types/domain'
 
-export function NewExerciseForm() {
+/**
+ * Alta y edición de un ejercicio propio. Mismo formulario para las dos cosas,
+ * como en el alta de alumno: un ejercicio mal cargado se corrige, no se borra
+ * y se vuelve a escribir.
+ */
+export function ExerciseForm({ exercise }: { exercise?: Exercise }) {
   const router = useRouter()
-  const [steps, setSteps] = useState<string[]>([''])
+  const editing = Boolean(exercise)
+  const [steps, setSteps] = useState<string[]>(
+    exercise?.steps.length ? exercise.steps : [''],
+  )
   const [error, setError] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [pending, startTransition] = useTransition()
@@ -26,16 +35,20 @@ export function NewExerciseForm() {
         setFieldErrors({})
 
         startTransition(async () => {
-          const res = await createExercise({
+          const input = {
             name: fd.get('name'),
             primary_muscle: fd.get('primary_muscle'),
             equipment: fd.get('equipment'),
             difficulty: fd.get('difficulty'),
             steps: steps.filter((s) => s.trim() !== ''),
-          })
+          }
+
+          const res = exercise
+            ? await updateExercise(exercise.id, input)
+            : await createExercise(input)
 
           if (res.ok) {
-            router.push(`/ejercicios/${res.data.id}`)
+            router.push(`/ejercicios/${exercise ? exercise.id : (res.data as { id: string }).id}`)
             router.refresh()
           } else {
             setError(res.error)
@@ -47,11 +60,24 @@ export function NewExerciseForm() {
       {error && <ErrorNote>{error}</ErrorNote>}
 
       <Field label="Nombre" htmlFor="name" required error={fieldErrors.name}>
-        <Input id="name" name="name" required maxLength={120} autoFocus placeholder="Sentadilla búlgara" />
+        <Input
+          id="name"
+          name="name"
+          defaultValue={exercise?.name}
+          required
+          maxLength={120}
+          autoFocus={!editing}
+          placeholder="Sentadilla búlgara"
+        />
       </Field>
 
       <Field label="Músculo principal" htmlFor="primary_muscle" required error={fieldErrors.primary_muscle}>
-        <Select id="primary_muscle" name="primary_muscle" required defaultValue="chest">
+        <Select
+          id="primary_muscle"
+          name="primary_muscle"
+          required
+          defaultValue={exercise?.primary_muscle ?? 'chest'}
+        >
           {MUSCLE_IDS.map((m) => (
             <option key={m} value={m}>
               {MUSCLES[m]}
@@ -62,7 +88,7 @@ export function NewExerciseForm() {
 
       <div className="grid grid-cols-2 gap-3">
         <Field label="Equipamiento" htmlFor="equipment">
-          <Select id="equipment" name="equipment" defaultValue="Peso corporal">
+          <Select id="equipment" name="equipment" defaultValue={exercise?.equipment ?? 'Peso corporal'}>
             {EQUIPMENT.map((q) => (
               <option key={q} value={q}>
                 {q}
@@ -71,7 +97,7 @@ export function NewExerciseForm() {
           </Select>
         </Field>
         <Field label="Dificultad" htmlFor="difficulty">
-          <Select id="difficulty" name="difficulty" defaultValue="Intermedio">
+          <Select id="difficulty" name="difficulty" defaultValue={exercise?.difficulty ?? 'Intermedio'}>
             {DIFFICULTIES.map((d) => (
               <option key={d} value={d}>
                 {d}
@@ -119,12 +145,14 @@ export function NewExerciseForm() {
       </div>
 
       <Button type="submit" size="lg" full disabled={pending}>
-        {pending ? 'Creando…' : 'Crear ejercicio'}
+        {pending ? 'Guardando…' : editing ? 'Guardar' : 'Crear ejercicio'}
       </Button>
 
-      <p className="text-center text-xs text-text-3">
-        Después vas a poder subirle un vídeo desde su ficha
-      </p>
+      {!editing && (
+        <p className="text-center text-xs text-text-3">
+          Después vas a poder subirle un vídeo desde su ficha
+        </p>
+      )}
     </form>
   )
 }

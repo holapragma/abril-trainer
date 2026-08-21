@@ -74,9 +74,9 @@ export function PaymentsList({
             return (
               <li key={p.id} className="flex items-center gap-3 p-3.5">
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium">
-                    {p.student ? fullName(p.student) : 'Alumno eliminado'}
-                  </p>
+                  {/* student nunca es null: el FK es on delete cascade, así que
+                      un pago no puede sobrevivir a su alumno. */}
+                  <p className="truncate font-medium">{p.student ? fullName(p.student) : '—'}</p>
                   <p className="text-sm text-text-2">
                     <span className="tabular">{formatMoney(p.amount)}</span>
                     {' · '}

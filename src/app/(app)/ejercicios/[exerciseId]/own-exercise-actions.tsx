@@ -2,8 +2,8 @@
 
 import { useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Trash2, Upload } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Pencil, Trash2, Upload } from 'lucide-react'
+import { Button, ButtonLink } from '@/components/ui/button'
 import { Confirm } from '@/components/ui/confirm'
 import { ErrorNote } from '@/components/ui/states'
 import { deleteExercise, uploadExerciseMedia } from '@/lib/actions/exercises'
@@ -39,6 +39,11 @@ export function OwnExerciseActions({ exercise }: { exercise: Exercise }) {
           })
         }}
       />
+
+      <ButtonLink href={`/ejercicios/${exercise.id}/editar`} variant="secondary" full>
+        <Pencil size={18} />
+        Editar
+      </ButtonLink>
 
       <Button variant="secondary" full disabled={pending} onClick={() => fileRef.current?.click()}>
         <Upload size={18} />

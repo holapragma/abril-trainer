@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { PageBody, PageHeader } from '@/components/layout/page-header'
-import { NewExerciseForm } from './new-exercise-form'
+import { ExerciseForm } from '../exercise-form'
 
 export const metadata: Metadata = { title: 'Nuevo ejercicio · Abril Trainer' }
 
@@ -9,7 +9,7 @@ export default function NuevoEjercicioPage() {
     <>
       <PageHeader title="Nuevo ejercicio" back="/ejercicios" />
       <PageBody>
-        <NewExerciseForm />
+        <ExerciseForm />
       </PageBody>
     </>
   )

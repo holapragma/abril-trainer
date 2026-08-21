@@ -5,6 +5,7 @@ import { StudentHeader } from '../student-header'
 import { Badge } from '@/components/ui/badge'
 import { EmptyState } from '@/components/ui/states'
 import { getBlocks } from '@/lib/queries/planning'
+import type { TrainingBlock } from '@/types/domain'
 import { formatDate } from '@/lib/format'
 import { BLOCK_STATUS } from '@/lib/constants'
 import { NewBlockButton } from './new-block-button'
@@ -67,7 +68,7 @@ function BlockCard({
   muted,
 }: {
   studentId: string
-  block: { id: string; name: string; goal: string | null; starts_on: string; total_weeks: number; status: 'borrador' | 'activo' | 'terminado' }
+  block: TrainingBlock
   muted?: boolean
 }) {
   return (
