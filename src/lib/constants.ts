@@ -74,7 +74,6 @@ export const ATTENDANCE_STATUS: Record<Enums<'abril_trainer_attendance_status'>,
 }
 
 export const BLOCK_STATUS: Record<Enums<'abril_trainer_block_status'>, string> = {
-  borrador: 'Borrador',
   activo: 'Activo',
   terminado: 'Terminado',
 }
@@ -88,6 +87,13 @@ export const PAYMENT_STATUS = {
 export type PaymentStatus = keyof typeof PAYMENT_STATUS
 
 // ── Días de la semana (ISO: 1 = lunes) ───────────────────────────────────────
+
+/**
+ * Métodos de cobro. Texto libre daba cinco escrituras distintas de
+ * «transferencia» y ningún corte posible. La columna sigue siendo text: los
+ * valores viejos se muestran tal cual.
+ */
+export const PAYMENT_METHODS = ['Efectivo', 'Transferencia', 'Otro'] as const
 
 export const WEEKDAYS = [
   { value: 1, label: 'Lunes', short: 'Lun', initial: 'L' },

@@ -100,6 +100,75 @@ export async function unenrollStudent(classId: string, studentId: string): Promi
   return ok(undefined)
 }
 
+/**
+ * Suspende o mueve una ocurrencia puntual de una clase.
+ *
+ * Hasta ahora un feriado se resolvía marcando a todos «justificado», que es
+ * falsear la asistencia para representar algo que no pasó. La excepción dice lo
+ * que realmente ocurrió: ese día no hubo clase, o fue otro día.
+ */
+export async function setClassException(input: {
+  class_id: string
+  date: string
+  kind: 'cancelada' | 'movida'
+  new_date?: string | null
+  new_start_time?: string | null
+  reason?: string | null
+}): Promise<ActionResult> {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(input.date)) return fail('Fecha inválida')
+  if (input.kind === 'movida' && !input.new_date) {
+    return fail('Elegí a qué día se mueve')
+  }
+
+  const supabase = await createClient()
+  const { error } = await supabase.from('abril_trainer_class_exceptions').upsert(
+    {
+      class_id: input.class_id,
+      date: input.date,
+      kind: input.kind,
+      new_date: input.kind === 'movida' ? input.new_date : null,
+      new_start_time: input.kind === 'movida' ? (input.new_start_time ?? null) : null,
+      reason: input.reason?.trim() || null,
+    },
+    { onConflict: 'class_id,date' },
+  )
+
+  if (error) {
+    console.error('setClassException:', error.message)
+    return fail('No se pudo guardar el cambio de la clase')
+  }
+
+  revalidatePath(`/clases/${input.class_id}`)
+  revalidatePath(`/clases/${input.class_id}/asistencia`)
+  revalidatePath('/clases')
+  revalidatePath('/')
+  return ok(undefined)
+}
+
+/** Vuelve atrás: la clase de esa fecha se dicta como siempre. */
+export async function clearClassException(
+  classId: string,
+  date: string,
+): Promise<ActionResult> {
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('abril_trainer_class_exceptions')
+    .delete()
+    .eq('class_id', classId)
+    .eq('date', date)
+
+  if (error) {
+    console.error('clearClassException:', error.message)
+    return fail('No se pudo reactivar la clase')
+  }
+
+  revalidatePath(`/clases/${classId}`)
+  revalidatePath(`/clases/${classId}/asistencia`)
+  revalidatePath('/clases')
+  revalidatePath('/')
+  return ok(undefined)
+}
+
 /** Una fecha de asistencia tiene formato ISO y no está en el futuro. */
 function invalidDate(date: string): boolean {
   return !/^\d{4}-\d{2}-\d{2}$/.test(date) || date > todayISO()

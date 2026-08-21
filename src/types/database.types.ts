@@ -112,6 +112,46 @@ export type Database = {
           },
         ]
       }
+      abril_trainer_class_exceptions: {
+        Row: {
+          class_id: string
+          created_at: string
+          date: string
+          id: string
+          kind: Database["public"]["Enums"]["abril_trainer_class_exception_kind"]
+          new_date: string | null
+          new_start_time: string | null
+          reason: string | null
+        }
+        Insert: {
+          class_id: string
+          created_at?: string
+          date: string
+          id?: string
+          kind: Database["public"]["Enums"]["abril_trainer_class_exception_kind"]
+          new_date?: string | null
+          new_start_time?: string | null
+          reason?: string | null
+        }
+        Update: {
+          class_id?: string
+          created_at?: string
+          date?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["abril_trainer_class_exception_kind"]
+          new_date?: string | null
+          new_start_time?: string | null
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "abril_trainer_class_exceptions_class_id_fkey"
+            columns: ["class_id"]
+            referencedRelation: "abril_trainer_classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       abril_trainer_classes: {
         Row: {
           active: boolean
@@ -197,6 +237,7 @@ export type Database = {
           id: string
           media_url: string | null
           name: string
+          name_norm: string | null
           owner_id: string | null
           primary_muscle: string
           secondary_muscles: string[]
@@ -209,6 +250,7 @@ export type Database = {
           id: string
           media_url?: string | null
           name: string
+          name_norm?: string | null
           owner_id?: string | null
           primary_muscle: string
           secondary_muscles?: string[]
@@ -221,6 +263,7 @@ export type Database = {
           id?: string
           media_url?: string | null
           name?: string
+          name_norm?: string | null
           owner_id?: string | null
           primary_muscle?: string
           secondary_muscles?: string[]
@@ -733,6 +776,7 @@ export type Database = {
       abril_trainer_app_today: { Args: never; Returns: string }
       abril_trainer_assign_plan: {
         Args: {
+          p_charge?: boolean
           p_plan_id: string
           p_price: number
           p_starts_on?: string
@@ -740,9 +784,26 @@ export type Database = {
         }
         Returns: string
       }
+      abril_trainer_copy_block: {
+        Args: {
+          p_block_id: string
+          p_name?: string
+          p_starts_on?: string
+          p_student_id: string
+        }
+        Returns: string
+      }
+      abril_trainer_cycle_due: {
+        Args: { p_month: string; p_starts_on: string }
+        Returns: string
+      }
       abril_trainer_dashboard_summary: { Args: never; Returns: Json }
       abril_trainer_duplicate_week: {
         Args: { p_block_id: string; p_from_week: number; p_to_week?: number }
+        Returns: number
+      }
+      abril_trainer_generate_monthly_charges: {
+        Args: { p_month?: string }
         Returns: number
       }
       abril_trainer_is_my_class: { Args: { cid: string }; Returns: boolean }
@@ -774,10 +835,17 @@ export type Database = {
         Args: { tsid: string }
         Returns: boolean
       }
+      abril_trainer_payment_totals: { Args: never; Returns: Json }
+      abril_trainer_settle_payment: {
+        Args: { p_paid: boolean; p_payment_id: string }
+        Returns: string
+      }
+      abril_trainer_unaccent: { Args: { t: string }; Returns: string }
     }
     Enums: {
       abril_trainer_attendance_status: "presente" | "ausente" | "justificado"
-      abril_trainer_block_status: "borrador" | "activo" | "terminado"
+      abril_trainer_block_status: "activo" | "terminado"
+      abril_trainer_class_exception_kind: "cancelada" | "movida"
       abril_trainer_membership_status: "activa" | "pausada" | "finalizada"
       abril_trainer_modality: "presencial" | "virtual"
       abril_trainer_student_status: "activo" | "pausa" | "baja"

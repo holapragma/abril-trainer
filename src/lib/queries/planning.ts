@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import type { SessionWithExercises, TrainingBlock, TrainingSession } from '@/types/domain'
 
@@ -13,7 +14,7 @@ export async function getBlocks(studentId: string): Promise<TrainingBlock[]> {
   return data ?? []
 }
 
-export async function getBlock(blockId: string): Promise<TrainingBlock | null> {
+export const getBlock = cache(async (blockId: string): Promise<TrainingBlock | null> => {
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('abril_trainer_training_blocks')
@@ -23,7 +24,7 @@ export async function getBlock(blockId: string): Promise<TrainingBlock | null> {
 
   if (error) throw error
   return data
-}
+})
 
 /**
  * Todas las sesiones de un bloque, con cuántos ejercicios tiene cada una.
@@ -48,6 +49,45 @@ export async function getBlockSessions(
     }
     return { ...session, exerciseCount: session_exercises?.length ?? 0 }
   })
+}
+
+/**
+ * Todos los bloques de la entrenadora, con a qué alumno pertenecen y cuántas
+ * sesiones tienen: es el listado de «copiar de…».
+ *
+ * No hay tabla de plantillas a propósito — una plantilla es un bloque que ya
+ * existe. Dos conceptos serían dos cosas que mantener sincronizadas.
+ */
+export async function getCopyableBlocks(excludeStudentId?: string) {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('abril_trainer_training_blocks')
+    .select(
+      'id, name, total_weeks, starts_on, student:abril_trainer_students(id, first_name, last_name), sessions:abril_trainer_training_sessions(id)',
+    )
+    .order('starts_on', { ascending: false })
+    .limit(50)
+
+  if (error) throw error
+
+  return (data ?? [])
+    .map((b) => {
+      const student = b.student as unknown as {
+        id: string
+        first_name: string
+        last_name: string
+      } | null
+      const sessions = (b.sessions ?? []) as { id: string }[]
+      return {
+        id: b.id,
+        name: b.name,
+        total_weeks: b.total_weeks,
+        sessionCount: sessions.length,
+        student,
+      }
+    })
+    // Un bloque vacío no sirve de base para nada.
+    .filter((b) => b.sessionCount > 0 && b.student?.id !== excludeStudentId)
 }
 
 export async function getSession(sessionId: string): Promise<SessionWithExercises | null> {

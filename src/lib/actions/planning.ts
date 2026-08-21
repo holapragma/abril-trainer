@@ -3,18 +3,28 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { blockSchema, fieldErrorsOf, sessionExerciseSchema, sessionSchema } from '@/lib/schemas'
+import { SESSION_LABELS } from '@/lib/constants'
 import { fail, ok, type ActionResult } from '@/types/domain'
 
 // ── Bloques ──────────────────────────────────────────────────────────────────
 
+/**
+ * Crea el bloque y, con él, las sesiones de la primera semana.
+ *
+ * Antes se entraba a un bloque nuevo y lo que había era una lista de semanas
+ * vacías: la primera media docena de toques no era planificar, era construir
+ * la estructura a mano. El número sale de sessions_per_week del plan del
+ * alumno, que ya estaba cargado y no se usaba para nada.
+ */
 export async function createBlock(input: unknown): Promise<ActionResult<{ id: string }>> {
   const parsed = blockSchema.safeParse(input)
   if (!parsed.success) return fail('Revisá los datos', fieldErrorsOf(parsed.error))
 
   const supabase = await createClient()
+  const { sessions_per_week, ...block } = parsed.data
   const { data, error } = await supabase
     .from('abril_trainer_training_blocks')
-    .insert({ ...parsed.data, status: 'activo' })
+    .insert({ ...block, status: 'activo' })
     .select('id')
     .single()
 
@@ -23,9 +33,53 @@ export async function createBlock(input: unknown): Promise<ActionResult<{ id: st
     return fail('No se pudo crear el bloque')
   }
 
+  if (sessions_per_week && sessions_per_week > 0) {
+    const rows = SESSION_LABELS.slice(0, sessions_per_week).map((day_label, i) => ({
+      block_id: data.id,
+      week_number: 1,
+      day_label,
+      order_index: i,
+    }))
+
+    // Si esto falla, el bloque igual sirve: se agregan las sesiones a mano. No
+    // vale la pena tirar abajo la creación entera por las etiquetas.
+    const { error: sessErr } = await supabase.from('abril_trainer_training_sessions').insert(rows)
+    if (sessErr) console.error('createBlock/sessions:', sessErr.message)
+  }
+
   revalidatePath(`/alumnos/${parsed.data.student_id}`)
   revalidatePath('/')
   return ok({ id: data.id })
+}
+
+/**
+ * Crea el bloque copiando otro: semanas, sesiones, ejercicios y prescripciones.
+ * Lo que NO viaja: asistencia, pagos ni nada personal del alumno de origen.
+ */
+export async function copyBlock(input: {
+  block_id: string
+  student_id: string
+  name?: string
+  starts_on?: string
+}): Promise<ActionResult<{ id: string }>> {
+  const supabase = await createClient()
+  const { data, error } = await supabase.rpc('abril_trainer_copy_block', {
+    p_block_id: input.block_id,
+    p_student_id: input.student_id,
+    p_name: input.name ?? undefined,
+    p_starts_on: input.starts_on ?? undefined,
+  })
+
+  if (error) {
+    console.error('copyBlock:', error.message)
+    return fail('No se pudo copiar la planificación')
+  }
+  if (!data) return fail('No se pudo copiar la planificación')
+
+  revalidatePath(`/alumnos/${input.student_id}`)
+  revalidatePath(`/alumnos/${input.student_id}/entrenamiento`)
+  revalidatePath('/')
+  return ok({ id: data })
 }
 
 export async function updateBlock(

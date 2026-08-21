@@ -21,10 +21,14 @@ export function PaymentsList({
   payments,
   students,
   activeFilter,
+  pages,
+  hasMore,
 }: {
   payments: PaymentWithStudent[]
   students: StudentListItem[]
   activeFilter?: PaymentStatus
+  pages: number
+  hasMore: boolean
 }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -32,10 +36,12 @@ export function PaymentsList({
 
   const [adding, setAdding] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [aviso, setAviso] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
 
   function setFilter(value: PaymentStatus | null) {
     const next = new URLSearchParams(params.toString())
+    next.delete('n')
     if (value === null || next.get('estado') === value) next.delete('estado')
     else next.set('estado', value)
     const qs = next.toString()
@@ -45,6 +51,7 @@ export function PaymentsList({
   return (
     <div className="space-y-3">
       {error && <ErrorNote>{error}</ErrorNote>}
+      {aviso && <p className="text-sm text-text-2">{aviso}</p>}
 
       <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4">
         <Chip selected={!activeFilter} onClick={() => setFilter(null)}>
@@ -74,9 +81,9 @@ export function PaymentsList({
             return (
               <li key={p.id} className="flex items-center gap-3 p-3.5">
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium">
-                    {p.student ? fullName(p.student) : 'Alumno eliminado'}
-                  </p>
+                  {/* student nunca es null: el FK es on delete cascade, así que
+                      un pago no puede sobrevivir a su alumno. */}
+                  <p className="truncate font-medium">{p.student ? fullName(p.student) : '—'}</p>
                   <p className="text-sm text-text-2">
                     <span className="tabular">{formatMoney(p.amount)}</span>
                     {' · '}
@@ -95,8 +102,11 @@ export function PaymentsList({
                   onClick={() =>
                     startTransition(async () => {
                       const res = await togglePaid(p.id, !isPaid)
-                      if (res.ok) router.refresh()
-                      else setError(res.error)
+                      if (!res.ok) return setError(res.error)
+                      // Cobrar abre el ciclo siguiente: conviene decirlo, o
+                      // parece que apareció un pago de la nada.
+                      setAviso(res.data.chained ? 'Ya quedó abierto el cobro del mes que viene.' : null)
+                      router.refresh()
                     })
                   }
                   className={cn(
@@ -112,6 +122,20 @@ export function PaymentsList({
             )
           })}
         </ul>
+      )}
+
+      {hasMore && (
+        <Button
+          variant="ghost"
+          full
+          onClick={() => {
+            const next = new URLSearchParams(params.toString())
+            next.set('n', String(pages + 1))
+            router.replace(`${pathname}?${next.toString()}`, { scroll: false })
+          }}
+        >
+          Cargar más
+        </Button>
       )}
 
       <Button variant="secondary" full onClick={() => setAdding(true)} disabled={students.length === 0}>

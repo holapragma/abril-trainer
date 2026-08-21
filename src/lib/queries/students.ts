@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { withStatus } from '@/lib/payment-status'
 import { addDays, todayISO } from '@/lib/today'
@@ -39,12 +40,17 @@ export async function getStudents(filters?: {
   return data ?? []
 }
 
-export async function getStudent(id: string): Promise<Student | null> {
+/**
+ * cache() de React: la ficha del alumno renderiza StudentHeader y la página en
+ * el mismo pase, y las dos necesitan el alumno. Sin esto son dos consultas
+ * idénticas por carga, en las cuatro pestañas.
+ */
+export const getStudent = cache(async (id: string): Promise<Student | null> => {
   const supabase = await createClient()
   const { data, error } = await supabase.from('abril_trainer_students').select('*').eq('id', id).maybeSingle()
   if (error) throw error
   return data
-}
+})
 
 export async function getActiveMembership(studentId: string): Promise<MembershipWithPlan | null> {
   const supabase = await createClient()
@@ -90,14 +96,40 @@ export async function getStudentOverview(studentId: string) {
   if (attendance.error) throw attendance.error
 
   const asistencias = attendance.data ?? []
+  const presentes = asistencias.filter((a) => a.status === 'presente').length
 
   return {
     membership,
     activeBlock: blocks.data?.[0] ?? null,
     payments: (payments.data ?? []).map(withStatus),
     attendance30d: {
-      presente: asistencias.filter((a) => a.status === 'presente').length,
+      presente: presentes,
       total: asistencias.length,
     },
+    adherencia: adherenciaDe(membership, presentes),
+  }
+}
+
+/**
+ * Adherencia de las últimas cuatro semanas: lo que el alumno contrató contra lo
+ * que realmente vino.
+ *
+ * sessions_per_week estaba cargado en el plan y no se cruzaba con nada: se le
+ * vendían tres veces por semana a alguien que venía una, y el sistema no decía
+ * nada. Devuelve null cuando el plan no define frecuencia — sin contrato no hay
+ * nada contra qué comparar, y un número inventado sería peor que ninguno.
+ */
+function adherenciaDe(
+  membership: MembershipWithPlan | null,
+  presentes: number,
+): { esperadas: number; asistidas: number; ratio: number } | null {
+  const porSemana = membership?.plan?.sessions_per_week
+  if (!porSemana || porSemana <= 0) return null
+
+  const esperadas = porSemana * 4
+  return {
+    esperadas,
+    asistidas: presentes,
+    ratio: esperadas > 0 ? presentes / esperadas : 0,
   }
 }

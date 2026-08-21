@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
 import { Confirm } from '@/components/ui/confirm'
 import { EmptyState, ErrorNote } from '@/components/ui/states'
-import { PaymentSheet } from '@/app/(app)/pagos/payment-sheet'
+import { PaymentSheet, type MembershipHint } from '@/app/(app)/pagos/payment-sheet'
 import { deletePayment, togglePaid } from '@/lib/actions/payments'
 import { dueLabel, formatDate, formatMoney } from '@/lib/format'
 import { PAYMENT_STATUS } from '@/lib/constants'
@@ -20,14 +20,17 @@ const TONE = { pagado: 'ok', pendiente: 'warn', vencido: 'danger' } as const
 export function StudentPayments({
   studentId,
   payments,
+  membership,
 }: {
   studentId: string
   payments: PaymentWithStatus[]
+  membership: MembershipHint | null
 }) {
   const router = useRouter()
   const [adding, setAdding] = useState(false)
   const [toDelete, setToDelete] = useState<PaymentWithStatus | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [aviso, setAviso] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
 
   const debe = payments
@@ -37,6 +40,7 @@ export function StudentPayments({
   return (
     <div className="space-y-4">
       {error && <ErrorNote>{error}</ErrorNote>}
+      {aviso && <p className="text-sm text-text-2">{aviso}</p>}
 
       {debe > 0 && (
         <Card className="p-4">
@@ -76,8 +80,11 @@ export function StudentPayments({
                   onClick={() =>
                     startTransition(async () => {
                       const res = await togglePaid(p.id, !isPaid)
-                      if (res.ok) router.refresh()
-                      else setError(res.error)
+                      if (!res.ok) return setError(res.error)
+                      // Cobrar abre el ciclo siguiente: conviene decirlo, o
+                      // parece que apareció un pago de la nada.
+                      setAviso(res.data.chained ? 'Ya quedó abierto el cobro del mes que viene.' : null)
+                      router.refresh()
                     })
                   }
                   className={cn(
@@ -108,10 +115,17 @@ export function StudentPayments({
         Registrar pago
       </Button>
 
+      {membership && (
+        <p className="text-center text-xs text-text-3">
+          El cobro del mes siguiente se abre solo al marcar pagado el anterior.
+        </p>
+      )}
+
       <PaymentSheet
         open={adding}
         students={[]}
         studentId={studentId}
+        membership={membership}
         onClose={() => setAdding(false)}
         onSaved={() => {
           setAdding(false)

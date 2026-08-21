@@ -6,18 +6,13 @@ import { Button } from '@/components/ui/button'
 import { Sheet } from '@/components/ui/sheet'
 import { Chip } from '@/components/ui/misc'
 import { ErrorNote, Skeleton } from '@/components/ui/states'
-import { createClient } from '@/lib/supabase/client'
+import { ExerciseMedia } from '@/components/exercise-media'
+import { searchExercises } from '@/lib/actions/exercises'
+import { exerciseMediaPublicUrl } from '@/lib/media-url'
 import { MUSCLE_GROUPS, muscleLabel } from '@/lib/constants'
 import { cn } from '@/lib/cn'
 import { pluralize } from '@/lib/format'
-
-type PickerExercise = {
-  id: string
-  name: string
-  primary_muscle: string
-  equipment: string
-  owner_id: string | null
-}
+import type { PickerExercise } from '@/types/domain'
 
 const GROUP_KEYS = Object.keys(MUSCLE_GROUPS)
 
@@ -53,39 +48,17 @@ export function ExercisePicker({
   const load = useCallback(async () => {
     setLoading(true)
     setError(null)
-    const supabase = createClient()
 
-    let query = supabase
-      .from('abril_trainer_exercises')
-      .select('id, name, primary_muscle, equipment, owner_id')
-      .order('name')
-      .limit(60)
-
-    if (q.trim()) query = query.ilike('name', `%${q.trim()}%`)
-    if (group) {
-      const muscles = MUSCLE_GROUPS[group]?.muscles ?? []
-      query = query.in('primary_muscle', [...muscles])
-    }
-
-    const { data, error } = await query
-    if (error) {
-      console.error('ExercisePicker:', error.message)
-      setError('No se pudo cargar la biblioteca')
+    const res = await searchExercises({ q, group: group ?? undefined })
+    if (res.ok) {
+      setItems(res.data.items)
+      setFavorites(new Set(res.data.favorites))
     } else {
-      setItems(data ?? [])
+      setError(res.error)
     }
+
     setLoading(false)
   }, [q, group])
-
-  // Favoritos: se cargan una vez al abrir.
-  useEffect(() => {
-    if (!open) return
-    const supabase = createClient()
-    supabase
-      .from('abril_trainer_exercise_favorites')
-      .select('exercise_id')
-      .then(({ data }) => setFavorites(new Set((data ?? []).map((f) => f.exercise_id))))
-  }, [open])
 
   useEffect(() => {
     if (!open) return
@@ -199,6 +172,12 @@ export function ExercisePicker({
                     >
                       {isSel && <Check size={14} />}
                     </span>
+                    <ExerciseMedia
+                      url={exerciseMediaPublicUrl(e.media_url)}
+                      alt={e.name}
+                      className="h-12 w-12 shrink-0 rounded-lg"
+                    />
+
                     <span className="min-w-0 flex-1">
                       <span className="flex items-center gap-1.5">
                         <span className="truncate font-medium">{e.name}</span>

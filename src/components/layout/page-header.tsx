@@ -47,7 +47,14 @@ export function PageHeader({
   )
 }
 
-/** Contenedor de contenido: ancho de lectura, aire y hueco para la nav inferior. */
+/**
+ * Contenedor de contenido: ancho de lectura, aire y hueco para la nav inferior.
+ *
+ * El ancho máximo se mantiene igual en escritorio a propósito: son listas y
+ * formularios de una columna, y estirarlos a 1400px no agrega información,
+ * solo obliga a barrer la pantalla con la vista. Lo que cambia es el relleno
+ * inferior, que existía solo para no quedar tapado por la barra del teléfono.
+ */
 export function PageBody({
   children,
   className,
@@ -56,6 +63,6 @@ export function PageBody({
   className?: string
 }) {
   return (
-    <div className={cn('mx-auto max-w-2xl px-4 py-4 pb-28', className)}>{children}</div>
+    <div className={cn('mx-auto max-w-2xl px-4 py-4 pb-28 lg:pb-10', className)}>{children}</div>
   )
 }

@@ -8,10 +8,17 @@ import { Skeleton } from '@/components/ui/states'
 import { getExercises, getFavoriteIds, getLibraryCounts } from '@/lib/queries/exercises'
 import { ExerciseGrid } from './exercise-grid'
 import { LibraryFilters } from './library-filters'
+import { LoadMore } from './load-more'
 
 export const metadata: Metadata = { title: 'Ejercicios · Abril Trainer' }
 
-type SearchParams = Promise<{ q?: string; grupo?: string; favs?: string; propios?: string }>
+type SearchParams = Promise<{
+  q?: string
+  grupo?: string
+  favs?: string
+  propios?: string
+  n?: string
+}>
 
 export default async function EjerciciosPage({ searchParams }: { searchParams: SearchParams }) {
   const sp = await searchParams
@@ -30,6 +37,7 @@ export default async function EjerciciosPage({ searchParams }: { searchParams: S
             group={sp.grupo}
             favsOnly={sp.favs === '1'}
             mineOnly={sp.propios === '1'}
+            pages={Math.min(Math.max(Number(sp.n) || 1, 1), 20)}
           />
         </Suspense>
       </PageBody>
@@ -75,22 +83,31 @@ async function Results({
   group,
   favsOnly,
   mineOnly,
+  pages,
 }: {
   q?: string
   group?: string
   favsOnly: boolean
   mineOnly: boolean
+  pages: number
 }) {
-  const [exercises, favorites] = await Promise.all([
-    getExercises({ q, group, mineOnly }),
+  const [{ items, hasMore }, favorites] = await Promise.all([
+    getExercises({ q, group, mineOnly, pages }),
     getFavoriteIds(),
   ])
 
   // Filtrado de favoritos acá (no dentro de getExercises) para no duplicar la
   // consulta a abril_trainer_exercise_favorites: ya la tenemos del Promise.all de arriba.
-  const list = favsOnly ? exercises.filter((e) => favorites.has(e.id)) : exercises
+  const list = favsOnly ? items.filter((e) => favorites.has(e.id)) : items
 
-  return <ExerciseGrid exercises={list} favorites={[...favorites]} />
+  return (
+    <>
+      <ExerciseGrid exercises={list} favorites={[...favorites]} />
+      {/* Con el filtro de favoritos el recorte es en memoria, así que «cargar
+          más» seguiría teniendo sentido: hay más favoritos más adelante. */}
+      {hasMore && <LoadMore pages={pages} shown={list.length} />}
+    </>
+  )
 }
 
 function GridSkeleton() {

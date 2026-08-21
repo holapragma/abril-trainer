@@ -4,11 +4,13 @@ import { useOptimistic, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check, ChevronLeft, ChevronRight, CircleSlash, Minus, Users } from 'lucide-react'
 import { Avatar } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { EmptyState, ErrorNote } from '@/components/ui/states'
 import { markAllPresent, markAttendance } from '@/lib/actions/classes'
 import { addDays, isToday, todayISO } from '@/lib/today'
 import { formatDateShortEs, fullName, initials } from '@/lib/format'
+import { STUDENT_STATUS } from '@/lib/constants'
 import { cn } from '@/lib/cn'
 import type { AttendanceRow } from '@/types/domain'
 import type { Enums } from '@/types/database.types'
@@ -112,7 +114,16 @@ export function AttendanceSheet({
           return (
             <li key={r.student_id} className="flex items-center gap-3 p-3">
               <Avatar src={r.avatarUrl} initials={initials(r)} size="sm" />
-              <span className="min-w-0 flex-1 truncate font-medium">{fullName(r)}</span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate font-medium">{fullName(r)}</span>
+                {/* Se lo puede marcar igual —alguien en pausa puede caer un
+                    día— pero conviene que se vea de quién se trata. */}
+                {r.student_status !== 'activo' && (
+                  <Badge tone={r.student_status === 'baja' ? 'danger' : 'warn'}>
+                    {STUDENT_STATUS[r.student_status]}
+                  </Badge>
+                )}
+              </span>
 
               <div className="flex shrink-0 gap-1">
                 <StatusButton

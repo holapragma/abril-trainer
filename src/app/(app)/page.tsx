@@ -7,10 +7,11 @@ import { Badge } from '@/components/ui/badge'
 import { StatTile } from '@/components/ui/stat'
 import { Avatar } from '@/components/ui/avatar'
 import { Skeleton } from '@/components/ui/states'
-import { getDashboard, getStudentsWithoutPlan } from '@/lib/queries/dashboard'
+import { getDashboard } from '@/lib/queries/dashboard'
 import { getProfile } from '@/lib/queries/profile'
 import { formatMoneyShort, formatTime, fullName, initials, pluralize } from '@/lib/format'
 import { todayHour } from '@/lib/today'
+import { CobrosPendientes } from './cobros-pendientes'
 
 export default function InicioPage() {
   return (
@@ -41,10 +42,12 @@ async function Greeting() {
           <p className="text-sm text-text-2">{saludo}</p>
           <h1 className="font-display truncate text-2xl font-bold">{nombre}</h1>
         </div>
+        {/* En escritorio Ajustes vive en el sidebar: acá sería un segundo
+            camino a lo mismo. */}
         <Link
           href="/ajustes"
           aria-label="Ajustes"
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-text-2 hover:bg-surface-2 hover:text-text"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-text-2 hover:bg-surface-2 hover:text-text lg:hidden"
         >
           <Settings size={20} />
         </Link>
@@ -54,7 +57,8 @@ async function Greeting() {
 }
 
 async function Dashboard() {
-  const [data, sinPlan] = await Promise.all([getDashboard(), getStudentsWithoutPlan()])
+  const data = await getDashboard()
+  const sinPlan = data.planificacion.sin_rutina_lista
 
   return (
     <>
@@ -70,14 +74,17 @@ async function Dashboard() {
             {data.clases_hoy.map((c) => (
               <Link
                 key={c.id}
-                href={`/clases/${c.id}/asistencia`}
+                href={`/clases/${c.id}/asistencia${c.fecha ? `?fecha=${c.fecha}` : ''}`}
                 className="flex items-center gap-3 p-4 transition-colors hover:bg-surface-2"
               >
                 <span className="tabular font-display w-14 shrink-0 text-lg font-bold">
                   {formatTime(c.hora)}
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium">{c.nombre}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="truncate font-medium">{c.nombre}</p>
+                    {c.movida && <Badge tone="warn">Movida</Badge>}
+                  </div>
                   <p className="tabular text-sm text-text-2">
                     {c.inscritos}/{c.cupo} alumnos
                   </p>
@@ -95,6 +102,11 @@ async function Dashboard() {
           </CardList>
         )}
       </section>
+
+      <CobrosPendientes
+        cobros={data.cobros_pendientes}
+        porGenerar={data.cobros_por_generar}
+      />
 
       {/* Alumnos */}
       <section>

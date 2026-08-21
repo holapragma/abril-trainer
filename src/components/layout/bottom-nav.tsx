@@ -2,35 +2,26 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { CalendarDays, House, Users, Wallet } from 'lucide-react'
 import { cn } from '@/lib/cn'
+import { NAV_ITEMS, isNavItemActive } from './nav-items'
 
 /**
- * Cuatro pestañas, no cinco.
+ * La barra del teléfono. Las rutas y los íconos salen de nav-items.ts, que
+ * comparte con el sidebar de escritorio: son dos presentaciones del mismo menú.
  *
- * «Entrenamientos» no está acá a propósito: una planificación siempre pertenece
- * a un alumno y se entra por su ficha. Una pestaña de nivel superior tendría que
- * inventarse un contenido que nadie pidió. Cuatro además respiran mejor en la
- * barra inferior de un teléfono.
+ * Desaparece en `lg`, donde ese menú pasa a la columna izquierda.
  */
-const TABS = [
-  { href: '/', label: 'Inicio', icon: House },
-  { href: '/alumnos', label: 'Alumnos', icon: Users },
-  { href: '/clases', label: 'Clases', icon: CalendarDays },
-  { href: '/pagos', label: 'Pagos', icon: Wallet },
-] as const
-
 export function BottomNav() {
   const pathname = usePathname()
 
   return (
     <nav
       aria-label="Navegación principal"
-      className="safe-bottom fixed inset-x-0 bottom-0 z-40 border-t border-border bg-bg/90 backdrop-blur-md"
+      className="safe-bottom fixed inset-x-0 bottom-0 z-40 border-t border-border bg-bg/90 backdrop-blur-md lg:hidden"
     >
       <ul className="mx-auto flex max-w-2xl">
-        {TABS.map(({ href, label, icon: Icon }) => {
-          const active = href === '/' ? pathname === '/' : pathname.startsWith(href)
+        {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+          const active = isNavItemActive(href, pathname)
           return (
             <li key={href} className="flex-1">
               <Link

@@ -12,15 +12,16 @@ export const metadata: Metadata = { title: 'Pagos · Abril Trainer' }
 export default async function PagosPage({
   searchParams,
 }: {
-  searchParams: Promise<{ estado?: string }>
+  searchParams: Promise<{ estado?: string; n?: string }>
 }) {
-  const { estado } = await searchParams
+  const { estado, n } = await searchParams
+  const pages = Math.min(Math.max(Number(n) || 1, 1), 20)
   const filter = (['pagado', 'pendiente', 'vencido'] as const).includes(estado as PaymentStatus)
     ? (estado as PaymentStatus)
     : undefined
 
-  const [payments, totals, students] = await Promise.all([
-    getPayments(filter),
+  const [{ items: payments, hasMore }, totals, students] = await Promise.all([
+    getPayments(filter, pages),
     getPaymentTotals(),
     getStudents({ status: 'activo' }),
   ])
@@ -35,7 +36,13 @@ export default async function PagosPage({
           <StatTile label="Vencidos" value={totals.vencidos} tone={totals.vencidos > 0 ? 'danger' : 'neutral'} />
         </div>
 
-        <PaymentsList payments={payments} students={students} activeFilter={filter} />
+        <PaymentsList
+          payments={payments}
+          students={students}
+          activeFilter={filter}
+          pages={pages}
+          hasMore={hasMore}
+        />
       </PageBody>
     </>
   )

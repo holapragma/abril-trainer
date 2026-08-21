@@ -56,6 +56,11 @@ export const blockSchema = z.object({
   goal: z.preprocess(emptyToNull, trimmed.max(200).nullable()),
   starts_on: z.iso.date(),
   total_weeks: z.coerce.number().int().min(1, 'Mínimo 1 semana').max(52, 'Máximo 52 semanas'),
+  /**
+   * Cuántas sesiones crear en la semana 1. No es una columna: es una
+   * instrucción para el alta, que evita empezar con semanas vacías.
+   */
+  sessions_per_week: z.coerce.number().int().min(0).max(5).default(0),
 })
 
 export const sessionSchema = z.object({

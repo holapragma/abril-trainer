@@ -75,6 +75,7 @@ union all select 'abril_trainer_workout_logs',      count(*) from abril_trainer_
 union all select 'abril_trainer_classes',           count(*) from abril_trainer_classes
 union all select 'abril_trainer_class_enrollments', count(*) from abril_trainer_class_enrollments
 union all select 'abril_trainer_attendance',        count(*) from abril_trainer_attendance
+union all select 'abril_trainer_class_exceptions',  count(*) from abril_trainer_class_exceptions
 order by 1;
 
 \echo '── 1b. Pero sí ve el catálogo global (debe ser > 0) ──'
@@ -275,6 +276,131 @@ begin
   else
     raise warning 'FALLO: quedaron % membresía(s) activa(s) tras el alta fallida', v_activas;
   end if;
+end $$;
+
+\echo '── 4k. El ciclo de cobro: asignar plan abre el primer cobro ──'
+do $$
+declare v_mem uuid; v_pagos int;
+begin
+  v_mem := abril_trainer_assign_plan(
+    'aaaaaaaa-0000-0000-0000-00000000000a',
+    'aaaaaaaa-0000-0000-0000-00000000000c',
+    30000, '2026-01-31');
+
+  select count(*) into v_pagos from abril_trainer_payments
+   where membership_id = v_mem and due_date = '2026-01-31' and paid_at is null;
+
+  if v_pagos = 1 then raise notice 'OK: asignar plan abrió el primer cobro';
+  else raise warning 'FALLO: el primer cobro no se abrió (% filas)', v_pagos;
+  end if;
+end $$;
+
+\echo '── 4l. Cobrar encadena el ciclo siguiente, y hacerlo dos veces no duplica ──'
+do $$
+declare v_pago uuid; v_next uuid; v_otra uuid; v_total int;
+begin
+  select id into v_pago from abril_trainer_payments
+   where student_id = 'aaaaaaaa-0000-0000-0000-00000000000a' and due_date = '2026-01-31';
+
+  v_next := abril_trainer_settle_payment(v_pago, true);
+
+  -- 31 de enero + un mes: el 28 de febrero, no el 3 de marzo.
+  if v_next is null then
+    raise warning 'FALLO: cobrar no encadenó el ciclo siguiente';
+  elsif (select due_date from abril_trainer_payments where id = v_next) <> '2026-02-28' then
+    raise warning 'FALLO: el ciclo siguiente cayó en % y no en 2026-02-28',
+      (select due_date from abril_trainer_payments where id = v_next);
+  else
+    raise notice 'OK: cobrar abrió el ciclo siguiente (2026-02-28)';
+  end if;
+
+  perform abril_trainer_settle_payment(v_pago, false);
+  v_otra := abril_trainer_settle_payment(v_pago, true);
+
+  select count(*) into v_total from abril_trainer_payments
+   where student_id = 'aaaaaaaa-0000-0000-0000-00000000000a';
+
+  if v_otra is null and v_total = 2 then
+    raise notice 'OK: desmarcar y volver a cobrar no duplicó';
+  else
+    raise warning 'FALLO: quedaron % cobros tras desmarcar y volver a cobrar', v_total;
+  end if;
+end $$;
+
+\echo '── 4m. Generar los cobros del mes es idempotente ──'
+do $$
+declare a int; b int;
+begin
+  a := abril_trainer_generate_monthly_charges('2026-06-15');
+  b := abril_trainer_generate_monthly_charges('2026-06-15');
+  if b = 0 then raise notice 'OK: la segunda corrida no creó nada (primera: %)', a;
+  else raise warning 'FALLO: la segunda corrida creó % cobros', b;
+  end if;
+end $$;
+
+\echo '── 4n. Un alumno en pausa no genera cobros ──'
+do $$
+declare v_creados int;
+begin
+  update abril_trainer_students set status = 'pausa'
+   where id = 'aaaaaaaa-0000-0000-0000-00000000000a';
+
+  v_creados := abril_trainer_generate_monthly_charges('2026-07-15');
+
+  if v_creados = 0 then raise notice 'OK: la generación salteó al alumno en pausa';
+  else raise warning 'FALLO: generó % cobro(s) para un alumno en pausa', v_creados;
+  end if;
+
+  update abril_trainer_students set status = 'activo'
+   where id = 'aaaaaaaa-0000-0000-0000-00000000000a';
+end $$;
+
+\echo '── 4o. Copiar un bloque a otro alumno lleva sesiones y prescripciones ──'
+do $$
+declare v_new uuid; v_ses int; v_ejer int;
+begin
+  v_new := abril_trainer_copy_block(
+    'aaaaaaaa-0000-0000-0000-000000000003',
+    'aaaaaaaa-0000-0000-0000-00000000000b',
+    'Copiado');
+
+  select count(distinct ts.id), count(se.id) into v_ses, v_ejer
+    from abril_trainer_training_sessions ts
+    left join abril_trainer_session_exercises se on se.session_id = ts.id
+   where ts.block_id = v_new;
+
+  if v_ses > 0 and v_ejer > 0 then
+    raise notice 'OK: copió % sesiones con % ejercicios', v_ses, v_ejer;
+  else
+    raise warning 'FALLO: la copia quedó vacía (% sesiones, % ejercicios)', v_ses, v_ejer;
+  end if;
+end $$;
+
+\echo '── 4p. Suspender una clase la saca del inicio ──'
+do $$
+declare antes int; despues int;
+begin
+  select jsonb_array_length(abril_trainer_dashboard_summary()->'clases_hoy') into antes;
+
+  insert into abril_trainer_class_exceptions (class_id, date, kind, reason)
+  values ('aaaaaaaa-0000-0000-0000-000000000006', abril_trainer_app_today(), 'cancelada', 'Feriado');
+
+  select jsonb_array_length(abril_trainer_dashboard_summary()->'clases_hoy') into despues;
+
+  if antes = 1 and despues = 0 then
+    raise notice 'OK: la clase suspendida desapareció del inicio';
+  else
+    raise warning 'FALLO: clases_hoy pasó de % a % (esperado 1 -> 0)', antes, despues;
+  end if;
+end $$;
+
+\echo '── 4q. Una clase movida sin fecha destino se rechaza ──'
+do $$ begin
+  insert into abril_trainer_class_exceptions (class_id, date, kind)
+  values ('aaaaaaaa-0000-0000-0000-000000000006', abril_trainer_app_today() + 7, 'movida');
+  raise warning 'FALLO: aceptó una clase movida sin decir adónde';
+exception when check_violation then
+  raise notice 'OK: rechazado -> movida exige new_date';
 end $$;
 
 -- ─────────────────────────────────────────────────────────────────────────────

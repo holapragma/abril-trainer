@@ -18,7 +18,7 @@ export default async function StudentSummaryPage({
   const [student, overview] = await Promise.all([getStudent(id), getStudentOverview(id)])
   if (!student) notFound()
 
-  const { membership, activeBlock, payments, attendance30d } = overview
+  const { membership, activeBlock, payments, attendance30d, adherencia } = overview
   const pendientes = payments.filter((p) => p.status !== 'pagado')
   const vencidos = pendientes.filter((p) => p.status === 'vencido')
 
@@ -122,6 +122,14 @@ export default async function StudentSummaryPage({
                 ? `${attendance30d.presente} de ${attendance30d.total} en 30 días`
                 : 'Sin registros en 30 días'}
             </p>
+            {/* Lo contratado contra lo que vino: el único número que cruza el
+                plan con la realidad. Solo aparece si el plan define frecuencia. */}
+            {adherencia && (
+              <p className="tabular text-xs text-text-3">
+                {adherencia.asistidas} de {adherencia.esperadas} sesiones del plan
+                {adherencia.ratio < 0.7 && adherencia.esperadas > 0 && ' · viene poco'}
+              </p>
+            )}
           </div>
         </Link>
 

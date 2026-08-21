@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import { createClient, requireUser } from '@/lib/supabase/server'
 import type { Tables } from '@/types/database.types'
 
@@ -10,7 +11,7 @@ import type { Tables } from '@/types/database.types'
  * primer render sin pista de por qué. Es un orden de pasos perfectamente
  * plausible, así que acá se repara sola.
  */
-export async function getProfile(): Promise<Tables<'abril_trainer_profiles'>> {
+export const getProfile = cache(async (): Promise<Tables<'abril_trainer_profiles'>> => {
   const user = await requireUser()
   const supabase = await createClient()
 
@@ -40,4 +41,4 @@ export async function getProfile(): Promise<Tables<'abril_trainer_profiles'>> {
   }
 
   return created
-}
+})

@@ -5,6 +5,24 @@
 **Fecha:** 2026-08-20
 **Método:** lectura completa del código (9.571 líneas TS/TSX, 1.154 de SQL), verificación con `npm run check` y `npm run build` (ambos pasan limpios), recorrido de las 24 rutas y de los 7 dominios de escritura. No se ejecutó la app contra una base real: no hay stack de Supabase en este entorno, así que los hallazgos de runtime están razonados sobre el código y marcados como tales cuando corresponde.
 
+> **Estado al cierre de las fases 0 a 4.** Este informe describe la aplicación
+> tal como estaba el 2026-08-20. Lo que sigue se ejecutó después, en la misma
+> rama, y deja obsoletas varias secciones de abajo — se conservan como registro
+> de por qué se hizo cada cosa.
+>
+> | Fase | Qué resolvió | Estado |
+> |---|---|---|
+> | 0 | Zona horaria (12 puntos), `assign_plan` atómico, `notes` fuera del alcance del alumno, asistencia sin futuro, `next` interno, zoom | ✅ |
+> | 1 | Foto del alumno, `cache()`, biblioteca completa y sin acentos, editar ejercicio propio, código muerto, CI | ✅ |
+> | 2 | El cobro nace de la membresía y se renueva solo; totales de una sola fuente; filtro y paginación en SQL | ✅ |
+> | 3 | Copiar planificación entre alumnos, semana 1 precreada, picker en el servidor con miniaturas, buscadores | ✅ |
+> | 4 | `class_exceptions`, `pausa`/`baja` con consecuencias, adherencia | ✅ |
+>
+> **Sigue pendiente, por decisión explícita:** recuperación de contraseña y
+> service worker / cola de asistencia offline (P2 y P3 de la tabla final).
+> `abril_trainer_workout_logs` se mantiene intacta y documentada, sin código de
+> app: es preparación, no olvido.
+
 ---
 
 ## Resumen ejecutivo

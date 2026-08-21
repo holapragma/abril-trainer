@@ -42,6 +42,12 @@ export type MembershipWithPlan = Tables<'abril_trainer_memberships'> & {
   plan: Pick<Plan, 'id' | 'name' | 'modality' | 'sessions_per_week'> | null
 }
 
+/** Lo mínimo que el selector de ejercicios necesita mostrar. */
+export type PickerExercise = Pick<
+  Exercise,
+  'id' | 'name' | 'primary_muscle' | 'equipment' | 'media_url' | 'owner_id'
+>
+
 export type SessionExerciseWithExercise = SessionExercise & {
   exercise: Pick<Exercise, 'id' | 'name' | 'primary_muscle' | 'media_url' | 'equipment'> | null
 }
@@ -58,19 +64,51 @@ export type AttendanceRow = {
   last_name: string
   photo_url: string | null
   status: Attendance['status'] | null
+  /** Estado del alumno: quien está en pausa o de baja se marca igual, pero se ve. */
+  student_status: Student['status']
+}
+
+export type ClassException = Tables<'abril_trainer_class_exceptions'>
+
+/** La ocurrencia concreta de una clase recurrente en una fecha. */
+export type Occurrence = {
+  /** La fecha de la ocurrencia original, la que sale del weekday. */
+  date: string
+  /** Adónde se movió, si se movió. */
+  effectiveDate: string
+  startTime: string | null
+  exception: ClassException | null
 }
 
 /** Forma de lo que devuelve la RPC abril_trainer_dashboard_summary(). */
 export type DashboardSummary = {
   alumnos: { total: number; activos: number; nuevos: number }
-  pagos: { cobrado_mes: number; pendientes: number; vencidos: number }
+  pagos: { cobrado_mes: number; pendientes: number; vencidos: number; adeudado: number }
+  /** Los cinco cobros sin saldar más atrasados, para tocarlos desde el inicio. */
+  cobros_pendientes: {
+    id: string
+    amount: number
+    due_date: string
+    student_id: string
+    first_name: string
+    last_name: string
+  }[]
+  /** Cuántas membresías activas no tienen todavía el cobro de este mes. */
+  cobros_por_generar: number
   clases_hoy: {
     id: string
     nombre: string
     hora: string
     cupo: number
+    fecha: string
+    movida: boolean
     inscritos: number
     asistencia_tomada: boolean
   }[]
-  planificacion: { sin_rutina: number; por_vencer: number }
+  planificacion: {
+    sin_rutina: number
+    por_vencer: number
+    /** Los primeros cinco, para poder tocarlos desde el inicio y no solo contarlos. */
+    sin_rutina_lista: Pick<Student, 'id' | 'first_name' | 'last_name' | 'photo_url'>[]
+  }
 }
